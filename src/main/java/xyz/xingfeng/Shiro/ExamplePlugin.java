@@ -9,7 +9,9 @@ import com.mikuac.shiro.annotation.common.Shiro;
 import com.mikuac.shiro.common.utils.MsgUtils;
 import com.mikuac.shiro.core.Bot;
 import com.mikuac.shiro.dto.action.common.ActionData;
+import com.mikuac.shiro.dto.action.common.ActionList;
 import com.mikuac.shiro.dto.action.common.MsgId;
+import com.mikuac.shiro.dto.action.response.GroupMemberInfoResp;
 import com.mikuac.shiro.dto.event.message.AnyMessageEvent;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
@@ -35,6 +37,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,6 +87,35 @@ public class ExamplePlugin {
                     .build();
             bot.sendGroupMsg(event.getGroupId(),msg,false);
         }
+    }
+
+    /**
+     * 今日老婆
+     * @param bot
+     * @param event\
+     */
+    @GroupMessageHandler
+    @MessageHandlerFilter(cmd = "今日老婆")
+    public void todayLover(Bot bot, GroupMessageEvent event){
+        //随机挑选一个群友当老婆
+        ActionList<GroupMemberInfoResp> groupMemberList = bot.getGroupMemberList(event.getGroupId());
+        GroupMemberInfoResp groupMemberInfoResp;
+        while (true) {
+            int i = new Random().nextInt(groupMemberList.getData().size());
+            groupMemberInfoResp = groupMemberList.getData().get(i);
+            if (groupMemberInfoResp.getUserId().equals(event.getUserId())){
+                continue;
+            }else {
+                break;
+            }
+        }
+        String msg = MsgUtils.builder()
+                .at(event.getUserId())
+                .text("今日老婆是:")
+                .at(groupMemberInfoResp.getUserId())
+                .img("https://q1.qlogo.cn/g?b=qq&nk="+groupMemberInfoResp.getUserId()+"&s=640")
+                .build();
+        bot.sendGroupMsg(event.getGroupId(),msg,false);
     }
 
 
