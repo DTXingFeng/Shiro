@@ -34,10 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,6 +76,7 @@ public class ExamplePlugin {
     @GroupMessageHandler
     @MessageHandlerFilter(senders = 1093757211,groups = 915912092)
     public void shouwang(Bot bot, GroupMessageEvent event){
+        //每天只提示一次
         if (LocalDate.now().getDayOfYear() != Static.date){
             Static.date = LocalDate.now().getDayOfYear();
             String msg = MsgUtils.builder()
@@ -96,27 +94,123 @@ public class ExamplePlugin {
      */
     @GroupMessageHandler
     @MessageHandlerFilter(cmd = "今日老婆")
-    public void todayLover(Bot bot, GroupMessageEvent event){
-        //随机挑选一个群友当老婆
+    public void todayLover(Bot bot, GroupMessageEvent event) {
         ActionList<GroupMemberInfoResp> groupMemberList = bot.getGroupMemberList(event.getGroupId());
-        GroupMemberInfoResp groupMemberInfoResp;
-        while (true) {
-            int i = new Random().nextInt(groupMemberList.getData().size());
-            groupMemberInfoResp = groupMemberList.getData().get(i);
-            if (groupMemberInfoResp.getUserId().equals(event.getUserId())){
-                continue;
-            }else {
-                break;
+        Collections.shuffle(groupMemberList.getData()); // 打乱列表顺序
+
+        String today = LocalDate.now().toString(); // 优化日期获取
+        String filePath = "todayLover/" + event.getGroupId() + ".json";
+
+        for (GroupMemberInfoResp member : groupMemberList.getData()) {
+            if (member.getUserId().equals(event.getUserId())) continue; // 跳过自己
+
+            if (!hasLoverToday(filePath, String.valueOf(event.getUserId()), today)) {
+                saveLoverInfo(filePath, String.valueOf(event.getUserId()), String.valueOf(member.getUserId()), today);
+                sendMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), String.valueOf(member.getUserId()));
+                return;
+            } else {
+                // 已经有老婆，发送已存在老婆的消息
+                String existingLover = getExistingLover(bot, event.getGroupId(),filePath, event.getUserId(), today);
+                if (existingLover != null) {
+                    sendExistingLoverMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), existingLover);
+                    return;
+                }
             }
         }
-        String msg = MsgUtils.builder()
-                .at(event.getUserId())
-                .text("今日老婆是:")
-                .at(groupMemberInfoResp.getUserId())
-                .img("https://q1.qlogo.cn/g?b=qq&nk="+groupMemberInfoResp.getUserId()+"&s=640")
-                .build();
-        bot.sendGroupMsg(event.getGroupId(),msg,false);
     }
+
+    private boolean hasLoverToday(String filePath, String userId, String today) {
+        File f = new File(filePath);
+        if (!f.exists()) return false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            JSONObject jsonObject = new JSONObject(sb.toString());
+            JSONArray jsonArray = jsonObject.getJSONArray("data");
+
+            for (int j = 0; j < jsonArray.length(); j++) {
+                if (jsonArray.getJSONObject(j).has(userId)) {
+                    String date = jsonArray.getJSONObject(j).getString(userId);
+                    if (date.equals(today)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private void saveLoverInfo(String filePath, String userId, String loverId, String today) {
+        File f = new File(filePath);
+        JSONArray jsonArray = new JSONArray();
+        JSONObject json = new JSONObject();
+        json.put(userId, today);
+        json.put("userId", loverId);
+        jsonArray.put(json);
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("data", jsonArray);
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+            bw.write(jsonObject.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendMessage(Bot bot, String groupId, String userId, String loverId) {
+        String message = MsgUtils.builder()
+                .at(Long.parseLong(userId))
+                .text("今日老婆是:")
+                .at(Long.parseLong(loverId))
+                .img("https://q1.qlogo.cn/g?b=qq&nk=" + loverId + "&s=640")
+                .build();
+        bot.sendGroupMsg(Long.parseLong(groupId), message, false);
+    }
+
+    private String getExistingLover(Bot bot,Long groupId,String filePath, Long userId, String today) {
+        File f = new File(filePath);
+        if (!f.exists()) return null;
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            JSONObject jsonObject = new JSONObject(sb.toString());
+            JSONArray jsonArray = jsonObject.getJSONArray("data");
+
+            for (int j = 0; j < jsonArray.length(); j++) {
+                if (jsonArray.getJSONObject(j).has(String.valueOf(userId))) {
+                    String date = jsonArray.getJSONObject(j).getString(String.valueOf(userId));
+                    if (date.equals(today)) {
+                        String loverId = jsonArray.getJSONObject(j).getString("userId");
+                        return loverId;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // 实现待补充
+    }
+
+    private void sendExistingLoverMessage(Bot bot, String groupId, String userId, String existingLover) {
+        String message = MsgUtils.builder()
+                .at(Long.parseLong(userId))
+                .text("今天已经有老婆了，ta是:")
+                .at(Long.parseLong(existingLover))
+                .img("https://q1.qlogo.cn/g?b=qq&nk=" + existingLover + "&s=640")
+                .build();
+        bot.sendGroupMsg(Long.parseLong(groupId), message, false);
+    }
+
 
 
     @GroupMessageHandler
