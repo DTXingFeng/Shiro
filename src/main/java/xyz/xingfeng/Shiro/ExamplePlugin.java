@@ -23,10 +23,7 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import xyz.xingfeng.Shiro.Tool.Static;
 import xyz.xingfeng.Shiro.network.NetRequest;
-import xyz.xingfeng.Shiro.service.CheckInService;
-import xyz.xingfeng.Shiro.service.Gemini;
-import xyz.xingfeng.Shiro.service.ImageService;
-import xyz.xingfeng.Shiro.service.MinecraftServerPing;
+import xyz.xingfeng.Shiro.service.*;
 
 import javax.security.auth.Subject;
 import java.io.*;
@@ -87,6 +84,28 @@ public class ExamplePlugin {
         }
     }
 
+    /**
+     * 当前pc占用状态
+     * @param bot
+     * @param event
+     */
+    @GroupMessageHandler
+    @MessageHandlerFilter(cmd = "服务器状态")
+    public void serverStatus(Bot bot, GroupMessageEvent event) {
+        SystemMonitor systemMonitor = new SystemMonitor();
+        String build = MsgUtils.builder()
+                .text("服务器状态:\n")
+                .text("CPU使用率: ")
+                .text(systemMonitor.getCpuLoad() + "%\n")
+                .text("内存使用率: ")
+                .text(systemMonitor.getMemoryUsage() + "\n")
+                .text("磁盘使用率: ")
+                .text(systemMonitor.getDiskUsage() + "\n")
+                .text("持续运行时间: ")
+                .text(systemMonitor.getSystemRunTime() + "\n")
+                .build();
+        bot.sendGroupMsg(event.getGroupId(),build, false);
+    }
     /**
      * 今日老婆
      * @param bot
