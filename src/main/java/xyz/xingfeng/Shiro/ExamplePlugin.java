@@ -36,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Shiro
-@Component
+
 public class ExamplePlugin {
     private static final Logger Log= LogManager.getLogger(ExamplePlugin.class);
 
