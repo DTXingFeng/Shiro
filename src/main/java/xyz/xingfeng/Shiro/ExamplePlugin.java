@@ -340,7 +340,7 @@ public class ExamplePlugin {
                 }else {
                     bot.sendGroupMsg(event.getGroupId(), post, false);
                 }
-                Gemini.addMsg(event.getGroupId(), "model", "model", post);
+                new Gemini().addMsg(event.getGroupId(), "model", "model", post);
                 return;
             } catch (Exception e) {
                 if (i >= 1){
@@ -399,7 +399,7 @@ public class ExamplePlugin {
                 msg = str;
             }
             // 没收到图片
-            Gemini.addMsg(event.getGroupId(),"user",event.getUserId().toString(),"[@"+event.getUserId()+"]:"+msg);
+            new Gemini().addMsg(event.getGroupId(),"user",event.getUserId().toString(),"[@"+event.getUserId()+"]:"+msg);
         }
     }
 

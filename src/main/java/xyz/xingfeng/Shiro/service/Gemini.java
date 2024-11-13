@@ -13,6 +13,9 @@ import java.util.HashMap;
 
 //gemini聊天
 public class Gemini {
+    public Gemini(){
+
+    }
     private JSONObject model = new JSONObject();
     public Gemini(Long groupId) throws Exception {
         Path chatHistoryDir = Paths.get("ChatHistory");
@@ -51,91 +54,95 @@ public class Gemini {
     }
 
     public String post() throws Exception {
-        HashMap<String, String> map = new HashMap<>();
-        map.put("Authorization","Bearer AIzaSyDaki7imFZT2iZgQRgymZ8vNq481AtwF7Q");
-        String post = NetRequest.post("https://llmapi.xingfeng.xyz/v2/gemini", model.toString(), map);
-        JSONObject jsonObject = new JSONObject(post);
-        if(jsonObject.has("error")){
-            return jsonObject.getString("error");
+        synchronized (this) {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("Authorization", "Bearer AIzaSyDaki7imFZT2iZgQRgymZ8vNq481AtwF7Q");
+            String post = NetRequest.post("https://llmapi.xingfeng.xyz/v2/gemini", model.toString(), map);
+            JSONObject jsonObject = new JSONObject(post);
+            if (jsonObject.has("error")) {
+                return jsonObject.getString("error");
+            }
+            String string = jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+            return string;
         }
-        String string = jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
-        return string;
     }
 
-    public static void addMsg(Long groupId,String role,String name,String content){
+    public void addMsg(Long groupId, String role, String name, String content){
+        synchronized (this) {
 // 保存聊天记录
-        Path chatHistoryDir = Paths.get("ChatHistory");
-        Path filePath = chatHistoryDir.resolve(groupId + ".json");
+            Path chatHistoryDir = Paths.get("ChatHistory");
+            Path filePath = chatHistoryDir.resolve(groupId + ".json");
 
-        // 确保目录存在
-        try {
-            Files.createDirectories(chatHistoryDir);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create directory: " + chatHistoryDir, e);
-        }
-
-        // 确保文件存在
-        File file = filePath.toFile();
-        if (!file.exists()) {
+            // 确保目录存在
             try {
-                file.createNewFile();
+                Files.createDirectories(chatHistoryDir);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to create file: " + filePath, e);
+                throw new RuntimeException("Failed to create directory: " + chatHistoryDir, e);
             }
-        }
 
-        try {
-            // 构建准备存进去的json
-            JSONObject msg = new JSONObject();
-            msg.put("role", role);
-            msg.put("name", name);
-            msg.put("content", content);
-
-            // 读取现有内容
-            StringBuilder stringBuilder = new StringBuilder();
-            if (file.length() > 0) { // 检查文件是否为空
-                try (BufferedReader bufferedReader = Files.newBufferedReader(filePath)) {
-                    String temp;
-                    while ((temp = bufferedReader.readLine()) != null) {
-                        stringBuilder.append(temp).append("\n");
-                    }
+            // 确保文件存在
+            File file = filePath.toFile();
+            if (!file.exists()) {
+                try {
+                    file.createNewFile();
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to create file: " + filePath, e);
                 }
             }
 
-            // 解析现有内容
-            JSONObject jsonObject;
-            if (stringBuilder.length() > 0) {
-                jsonObject = new JSONObject(stringBuilder.toString());
-                JSONArray jsonArray = jsonObject.getJSONArray("msg");
-                if (jsonArray.length() >= 150) {
-                    int removeCount = jsonArray.length() - 149;
-                    for (int i = 0; i < removeCount; i++) {
-                        jsonArray.remove(0);
+            try {
+                // 构建准备存进去的json
+                JSONObject msg = new JSONObject();
+                msg.put("role", role);
+                msg.put("name", name);
+                msg.put("content", content);
+
+                // 读取现有内容
+                StringBuilder stringBuilder = new StringBuilder();
+                if (file.length() > 0) { // 检查文件是否为空
+                    try (BufferedReader bufferedReader = Files.newBufferedReader(filePath)) {
+                        String temp;
+                        while ((temp = bufferedReader.readLine()) != null) {
+                            stringBuilder.append(temp).append("\n");
+                        }
                     }
                 }
-                jsonArray.put(msg);
-                jsonObject.put("msg", jsonArray);
-            } else {
-                // 如果文件为空，创建新的JSON对象
-                jsonObject = new JSONObject();
-                JSONArray jsonArray = new JSONArray();
-                jsonArray.put(msg);
-                jsonObject.put("msg", jsonArray);
-            }
 
-            // 写入文件
-            try (FileWriter fileWriter = new FileWriter(file)) {
-                fileWriter.write(jsonObject.toString());
-            }
+                // 解析现有内容
+                JSONObject jsonObject;
+                if (stringBuilder.length() > 0) {
+                    jsonObject = new JSONObject(stringBuilder.toString());
+                    JSONArray jsonArray = jsonObject.getJSONArray("msg");
+                    if (jsonArray.length() >= 150) {
+                        int removeCount = jsonArray.length() - 149;
+                        for (int i = 0; i < removeCount; i++) {
+                            jsonArray.remove(0);
+                        }
+                    }
+                    jsonArray.put(msg);
+                    jsonObject.put("msg", jsonArray);
+                } else {
+                    // 如果文件为空，创建新的JSON对象
+                    jsonObject = new JSONObject();
+                    JSONArray jsonArray = new JSONArray();
+                    jsonArray.put(msg);
+                    jsonObject.put("msg", jsonArray);
+                }
 
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("File not found: " + filePath, e);
-        } catch (IOException e) {
-            File f = filePath.toFile();
-            if (f.exists()) {
-                f.delete();
+                // 写入文件
+                try (FileWriter fileWriter = new FileWriter(file)) {
+                    fileWriter.write(jsonObject.toString());
+                }
+
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException("File not found: " + filePath, e);
+            } catch (IOException e) {
+                File f = filePath.toFile();
+                if (f.exists()) {
+                    f.delete();
+                }
+                throw new RuntimeException("IO error: " + filePath, e);
             }
-            throw new RuntimeException("IO error: " + filePath, e);
         }
     }
 }
