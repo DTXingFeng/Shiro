@@ -54,21 +54,19 @@ public class Gemini {
     }
 
     public String post() throws Exception {
-        synchronized (this) {
-            HashMap<String, String> map = new HashMap<>();
-            map.put("Authorization", "Bearer AIzaSyDaki7imFZT2iZgQRgymZ8vNq481AtwF7Q");
-            String post = NetRequest.post("https://llmapi.xingfeng.xyz/v2/gemini", model.toString(), map);
-            JSONObject jsonObject = new JSONObject(post);
-            if (jsonObject.has("error")) {
-                return jsonObject.getString("error");
-            }
-            String string = jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
-            return string;
+        HashMap<String, String> map = new HashMap<>();
+        map.put("Authorization", "Bearer AIzaSyDaki7imFZT2iZgQRgymZ8vNq481AtwF7Q");
+        String post = NetRequest.post("https://llmapi.xingfeng.xyz/v2/gemini", model.toString(), map);
+        JSONObject jsonObject = new JSONObject(post);
+        if (jsonObject.has("error")) {
+            return jsonObject.getString("error");
         }
+        String string = jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+        return string;
+
     }
 
-    public void addMsg(Long groupId, String role, String name, String content){
-        synchronized (this) {
+    public static void addMsg(Long groupId, String role, String name, String content){
 // 保存聊天记录
             Path chatHistoryDir = Paths.get("ChatHistory");
             Path filePath = chatHistoryDir.resolve(groupId + ".json");
@@ -143,6 +141,5 @@ public class Gemini {
                 }
                 throw new RuntimeException("IO error: " + filePath, e);
             }
-        }
     }
 }

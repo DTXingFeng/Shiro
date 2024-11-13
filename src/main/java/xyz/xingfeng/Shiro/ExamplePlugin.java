@@ -36,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Shiro
-
+@Component
 public class ExamplePlugin {
     private static final Logger Log= LogManager.getLogger(ExamplePlugin.class);
 
@@ -328,7 +328,10 @@ public class ExamplePlugin {
         int i = 0;
         while (true) {
             try {
-                String post = new Gemini(event.getGroupId()).post();
+                String post = "";
+                synchronized (this) {
+                    post = new Gemini(event.getGroupId()).post();
+                }
                 post = post.trim();
                 Pattern compile = Pattern.compile("(?s)^\\[@(.*)\\].*");
                 Matcher mat = compile.matcher(post);
@@ -340,7 +343,9 @@ public class ExamplePlugin {
                 }else {
                     bot.sendGroupMsg(event.getGroupId(), post, false);
                 }
-                new Gemini().addMsg(event.getGroupId(), "model", "model", post);
+                synchronized (this) {
+                    Gemini.addMsg(event.getGroupId(), "model", "model", post);
+                }
                 return;
             } catch (Exception e) {
                 if (i >= 1){
@@ -387,19 +392,21 @@ public class ExamplePlugin {
 
         } else {
             String msg = "";
-            if (str.contains("[CQ:at,qq=391459725")){
+            if (str.contains("[CQ:at,qq=391459725")) {
                 pattern = "(?<=\\[CQ:at.*\\]).*";
                 r = Pattern.compile(pattern);
                 m = r.matcher(str);
 
-                if (m.find()){
+                if (m.find()) {
                     msg = m.group();
                 }
-            }else {
+            } else {
                 msg = str;
             }
             // 没收到图片
-            new Gemini().addMsg(event.getGroupId(),"user",event.getUserId().toString(),"[@"+event.getUserId()+"]:"+msg);
+            synchronized (this) {
+                Gemini.addMsg(event.getGroupId(), "user", event.getUserId().toString(), "[@" + event.getUserId() + "]:" + msg);
+            }
         }
     }
 
