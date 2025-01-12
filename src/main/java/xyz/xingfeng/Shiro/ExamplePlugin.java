@@ -50,6 +50,7 @@ public class ExamplePlugin {
         builder.append("查询Java服务器 [服务器地址]:[端口号] 查询指定服务器的状态\n");
         builder.append("签到 签到并获得积分\n");
         builder.append("重置记忆 重置当前群记忆\n");
+        builder.append("今日老婆：获取今日老婆\n");
         bot.sendGroupMsg(event.getGroupId(), builder.toString(), false);
     }
     //重置当前群记忆
@@ -64,6 +65,8 @@ public class ExamplePlugin {
         }
         bot.sendGroupMsg(event.getGroupId(), "记忆已重置", false);
     }
+
+
 
     /**
      * 守望赚钱催促器
@@ -120,24 +123,41 @@ public class ExamplePlugin {
         String today = LocalDate.now().toString(); // 优化日期获取
         String filePath = "todayLover/" + event.getGroupId() + ".json";
 
-        for (GroupMemberInfoResp member : groupMemberList.getData()) {
-            if (member.getUserId().equals(event.getUserId())) continue; // 跳过自己
-
-            if (!hasLoverToday(filePath, String.valueOf(event.getUserId()), today)) {
-                saveLoverInfo(filePath, String.valueOf(event.getUserId()), String.valueOf(member.getUserId()), today);
-                sendMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), String.valueOf(member.getUserId()));
-                return;
-            } else {
-                // 已经有老婆，发送已存在老婆的消息
-                String existingLover = getExistingLover(bot, event.getGroupId(),filePath, event.getUserId(), today);
-                if (existingLover != null) {
-                    sendExistingLoverMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), existingLover);
-                    return;
+        //先随机抽取一个老婆
+        Wife wife = new Wife();
+        while (true) {
+            String wife1 = wife.getWife(String.valueOf(event.getGroupId()));
+            if (wife1 != null) {
+                //wife1不能是自己
+                if (wife1.equals(String.valueOf(event.getUserId()))) {
+                    continue;
                 }
+                if (!hasLoverToday(filePath, String.valueOf(event.getUserId()), today)) {
+                    saveLoverInfo(filePath, String.valueOf(event.getUserId()), wife1, today);
+                    sendMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), String.valueOf(wife1));
+                    return;
+                } else {
+                    // 已经有老婆，发送已存在老婆的消息
+                    String existingLover = getExistingLover(bot, event.getGroupId(),filePath, event.getUserId(), today);
+                    if (existingLover != null) {
+                        sendExistingLoverMessage(bot, String.valueOf(event.getGroupId()), String.valueOf(event.getUserId()), existingLover);
+                        return;
+                    }
+                }
+                return;
             }
         }
+
     }
 
+
+    /**
+     * 判断是否已经有老婆
+     * @param filePath 文件路径
+     * @param userId 用户id
+     * @param today 今天日期
+     * @return
+     */
     private boolean hasLoverToday(String filePath, String userId, String today) {
         File f = new File(filePath);
         if (!f.exists()) return false;
@@ -165,6 +185,13 @@ public class ExamplePlugin {
         return false;
     }
 
+    /**
+     * 保存老婆信息
+     * @param filePath 文件路径
+     * @param userId 用户id
+     * @param loverId 老婆id
+     * @param today 今天日期
+     */
     private void saveLoverInfo(String filePath, String userId, String loverId, String today) {
         File f = new File(filePath);
         JSONArray jsonArray = new JSONArray();
@@ -357,6 +384,12 @@ public class ExamplePlugin {
         }
     }
 
+
+    /**
+     * 收到群信息就启用的方法
+     * @param bot
+     * @param event
+     */
     @Order(1)
     @GroupMessageHandler
     public void 提示(Bot bot,GroupMessageEvent event){
@@ -375,7 +408,6 @@ public class ExamplePlugin {
                 imageUrl = imageUrl.replaceAll("&amp;","&");
                 try {
 //                  bot.sendGroupMsg(event.getGroupId(),imageUrl,false);
-
                     String s = NetRequest.postFormUrl("http://120.25.164.240:5000", imageUrl);
                     System.out.println(s);
                     JSONObject jsonObject = new JSONObject(s);
@@ -391,6 +423,7 @@ public class ExamplePlugin {
             }
 
         } else {
+            //收到纯文本
             String msg = "";
             if (str.contains("[CQ:at,qq=391459725")) {
                 pattern = "(?<=\\[CQ:at.*\\]).*";
