@@ -35,7 +35,7 @@ public class Wife {
                 strings.add(line);
                 i++;
             }
-            if (i>200){
+            if (i>1000){
                 //如果群老婆数量超过200，删除第一个
                 strings.remove(0);
             }

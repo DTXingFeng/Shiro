@@ -194,8 +194,21 @@ public class ExamplePlugin {
      */
     private void saveLoverInfo(String filePath, String userId, String loverId, String today) {
         File f = new File(filePath);
+        StringBuilder stringBuilder;
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(f));
+            stringBuilder = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+
         JSONArray jsonArray = new JSONArray();
-        JSONObject json = new JSONObject();
+        JSONObject json = new JSONObject(stringBuilder.toString());
         json.put(userId, today);
         json.put("userId", loverId);
         jsonArray.put(json);
