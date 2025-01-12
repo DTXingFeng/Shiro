@@ -438,6 +438,7 @@ public class ExamplePlugin {
             }
             // 没收到图片
             synchronized (this) {
+                new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
                 Gemini.addMsg(event.getGroupId(), "user", event.getUserId().toString(), "[@" + event.getUserId() + "]:" + msg);
             }
         }

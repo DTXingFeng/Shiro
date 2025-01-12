@@ -2,6 +2,8 @@ package xyz.xingfeng.Shiro.service;
 
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 /**
@@ -12,10 +14,16 @@ public class Wife {
 
     //将一个群友添加进群老婆列表
     public void addWife(String qq, String group){
-        File file = new File(WIFE_PATH+group+".txt");
-        if (!file.exists()){
-            //如果文件不存在，创建文件
-            file.mkdirs();
+        Path chatHistoryDir = Paths.get(WIFE_PATH);
+        Path filePath = chatHistoryDir.resolve(group + ".txt");
+        File file =filePath.toFile();
+        // 确保文件存在
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create file: " + filePath, e);
+            }
         }
         //将群友添加进群老婆列表
         try {
@@ -32,6 +40,14 @@ public class Wife {
                 strings.remove(0);
             }
             strings.add(qq);
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+            for (String s : strings){
+                bufferedWriter.write(s);
+                bufferedWriter.newLine();
+            }
+            bufferedWriter.flush();
+            bufferedWriter.close();
+            bufferedReader.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -40,10 +56,16 @@ public class Wife {
 
     //抽取一个群老婆
     public String getWife(String group) {
-        File file = new File(WIFE_PATH + group + ".txt");
+        Path chatHistoryDir = Paths.get(WIFE_PATH);
+        Path filePath = chatHistoryDir.resolve(group + ".txt");
+        File file =filePath.toFile();
+        // 确保文件存在
         if (!file.exists()) {
-            //如果文件不存在，创建文件
-            file.mkdirs();
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create file: " + filePath, e);
+            }
         }
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
