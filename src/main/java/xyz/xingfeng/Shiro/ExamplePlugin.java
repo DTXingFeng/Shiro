@@ -384,7 +384,7 @@ public class ExamplePlugin {
                     bot.sendGroupMsg(event.getGroupId(), post, false);
                 }
                 synchronized (this) {
-                    Gemini.addMsg(event.getGroupId(), "model", "model", post);
+                    Gemini.addMsg(event.getGroupId(), "assistant", "assistant", post);
                 }
                 return;
             } catch (Exception e) {
