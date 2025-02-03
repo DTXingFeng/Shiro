@@ -43,7 +43,7 @@ public class Gemini {
         //构建模型请求
         model = new JSONObject();
         model.put("model","deepseek-chat");
-        model.put("temperature",0.7);
+        model.put("temperature",0.8);
         model.put("stream",false);
         JSONArray msg = new JSONArray();
         msg.put(system);
