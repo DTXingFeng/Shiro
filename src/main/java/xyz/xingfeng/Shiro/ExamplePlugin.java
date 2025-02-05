@@ -22,6 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 import xyz.xingfeng.Shiro.Tool.Static;
+import xyz.xingfeng.Shiro.Tool.TimeTracker;
 import xyz.xingfeng.Shiro.network.NetRequest;
 import xyz.xingfeng.Shiro.service.*;
 
@@ -30,6 +31,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Time;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -315,7 +317,7 @@ public class ExamplePlugin {
     }
 
     @GroupMessageHandler
-    @MessageHandlerFilter(cmd = "/图图.*",groups = 635985918)
+    @MessageHandlerFilter(cmd = "/图图.*")
     public void randomImage(Bot bot,GroupMessageEvent event,Matcher matcher){
         List<String> imageUrl = new ArrayList<>();
         Pattern compile = Pattern.compile("/图图 (.*)");
@@ -361,10 +363,42 @@ public class ExamplePlugin {
         bot.sendPrivateMsg(2695570953L,"收到了来自"+event.getUserId()+" "+event.getPrivateSender().getNickname()+"的私聊消息,内容是:"+event.getMessage(),false);
     }
 
+    /**
+     * 打开\关闭自动群聊
+     */
+    @GroupMessageHandler
+    @MessageHandlerFilter(cmd = "打开自动群聊|关闭自动群聊",senders = 2695570953L)
+    public void openAutoChat(Bot bot,GroupMessageEvent event,Matcher matcher){
+        String action = matcher.group();
+        switch (action) {
+            case "打开自动群聊":
+                new TimeTracker(event.getGroupId()+"").open();
+                break;
+            case "关闭自动群聊":
+                new TimeTracker(event.getGroupId()+"").close();
+                break;
+            default:
+        }
+        bot.sendGroupMsg(event.getGroupId(),"已"+action+"功能",false);
+    }
+
+
+    /**
+     * 被艾特强制聊天
+     * @param bot
+     * @param event
+     */
     @Order(2)
     @GroupMessageHandler
     @MessageHandlerFilter(at = AtEnum.NEED)
     public void gemini(Bot bot,GroupMessageEvent event){
+        aichat(bot,event);
+    }
+
+    /**
+     * ai聊天
+     */
+    public void aichat(Bot bot,GroupMessageEvent event) {
         int i = 0;
         while (true) {
             try {
@@ -453,6 +487,10 @@ public class ExamplePlugin {
             synchronized (this) {
                 new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
                 Gemini.addMsg(event.getGroupId(), "user", event.getUserId().toString(), "[@" + event.getUserId() + "]:" + msg);
+                new TimeTracker(event.getGroupId()+"").addTime();
+                if(new TimeTracker(event.getGroupId()+"").isActive()){
+                    aichat(bot,event);
+                }
             }
         }
     }
