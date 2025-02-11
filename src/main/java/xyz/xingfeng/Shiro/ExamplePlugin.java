@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
 @Shiro
 @Component
 public class ExamplePlugin {
@@ -53,6 +54,9 @@ public class ExamplePlugin {
         builder.append("签到 签到并获得积分\n");
         builder.append("重置记忆 重置当前群记忆\n");
         builder.append("今日老婆：获取今日老婆\n");
+        builder.append("服务器状态：获取当前服务器状态\n");
+        builder.append("打开自动群聊：打开自动群聊功能\n");
+        builder.append("关闭自动群聊：关闭自动群聊功能");
         bot.sendGroupMsg(event.getGroupId(), builder.toString(), false);
     }
     //重置当前群记忆
@@ -382,6 +386,88 @@ public class ExamplePlugin {
         bot.sendGroupMsg(event.getGroupId(),"已"+action+"功能",false);
     }
 
+    /**
+     * 切换模型
+     */
+    @GroupMessageHandler
+    @MessageHandlerFilter(cmd = "切换ai配置 (.*)")
+    public void changeModel(Bot bot,GroupMessageEvent event,Matcher matcher){
+        String model = matcher.group(1);
+        Path aiConfigDir = Paths.get("aiConfig");
+        File file = aiConfigDir.resolve(model + ".json").toFile();
+        if (!file.exists()){
+            bot.sendGroupMsg(event.getGroupId(),"模型不存在",false);
+            return;
+        }
+        File f = new File(Static.CONFIG_PATH);
+        JSONObject jsonObject = readJsonFile(f);
+        jsonObject.put("aiConfigFile",model);
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+            bw.write(jsonObject.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        bot.sendGroupMsg(event.getGroupId(),"已切换ai配置为"+model,false);
+    }
+
+    /**
+     * ai配置列表
+     */
+    @GroupMessageHandler
+    @MessageHandlerFilter(cmd = "ai配置列表")
+    public void modelList(Bot bot,GroupMessageEvent event){
+        Path aiConfigDir = Paths.get("aiConfig");
+        File[] files = aiConfigDir.toFile().listFiles();
+        StringBuilder builder = new StringBuilder();
+        builder.append("ai配置列表:\n");
+        for (File file : files) {
+            builder.append(file.getName().replace(".json","")).append("\n");
+        }
+        bot.sendGroupMsg(event.getGroupId(),builder.toString(),false);
+    }
+
+    /**
+     * 创建ai配置
+     */
+    @PrivateMessageHandler
+    @MessageHandlerFilter(cmd = "(?s)创建ai配置 (.*)")
+    public void createModel(Bot bot,PrivateMessageEvent event,Matcher matcher) {
+        JSONObject json = new JSONObject();
+        String[] key = {"apiKey", "url", "modelName"};
+        String[] split = matcher.group(1).split("\n");
+        if (split.length != 4) {
+            bot.sendPrivateMsg(event.getUserId(), "参数错误", false);
+            return;
+        }
+        for (int i = 0; i < split.length; i++) {
+            if (i == 0) {
+                Path aiConfigDir = Paths.get("aiConfig");
+                File file = aiConfigDir.resolve(split[i] + ".json").toFile();
+                if (file.exists()) {
+                    bot.sendPrivateMsg(event.getUserId(), "模型已存在", false);
+                    return;
+                }
+                try {
+                    file.createNewFile();
+                    continue;
+                } catch (IOException e) {
+                    Log.error(e);
+                    bot.sendPrivateMsg(event.getUserId(), "创建失败", false);
+                    return;
+                }
+            }
+            json.put(key[i - 1], split[i]);
+        }
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("aiConfig/" + split[0] + ".json"))) {
+            bw.write(json.toString());
+        } catch (Exception e) {
+            Log.error(e);
+            bot.sendPrivateMsg(event.getUserId(), "创建失败", false);
+            return;
+        }
+        bot.sendPrivateMsg(event.getUserId(), "配置："+split[0]+"创建成功", false);
+    }
+
 
     /**
      * 被艾特强制聊天
@@ -392,43 +478,62 @@ public class ExamplePlugin {
     @GroupMessageHandler
     @MessageHandlerFilter(at = AtEnum.NEED)
     public void gemini(Bot bot,GroupMessageEvent event){
-        aichat(bot,event);
+        new Thread(()->{
+            aichat(bot,event,true);
+        }).start();
     }
 
     /**
      * ai聊天
      */
-    public void aichat(Bot bot,GroupMessageEvent event) {
-        int i = 0;
-        while (true) {
-            try {
-                String post = "";
-                synchronized (this) {
-                    post = new Gemini(event.getGroupId()).post();
-                }
-                post = post.trim();
-                Pattern compile = Pattern.compile("(?s)^\\[@(.*)\\].*");
-                Matcher mat = compile.matcher(post);
-                if (mat.find()) {
-                    String qq = mat.group(1);
-                    post = post.replaceAll("\\[@" + qq + "\\]", "");
-                    String build = MsgUtils.builder().at(Long.parseLong(qq)).text(post).build();
-                    bot.sendGroupMsg(event.getGroupId(), build, false);
-                }else {
+    public synchronized void aichat(Bot bot,GroupMessageEvent event,boolean b) {
+
+        try {
+            String post = "";
+            post = new Gemini(event.getGroupId()).post();
+            post = post.trim();
+            Pattern compile = Pattern.compile("(?s)^\\[@(.*)\\].*");
+            Matcher mat = compile.matcher(post);
+            if (mat.find()) {
+                String qq = mat.group(1);
+                post = post.replaceAll("\\[@" + qq + "\\]", "");
+                String build = MsgUtils.builder().at(Long.parseLong(qq)).text(post).build();
+                if (build.length() > 80){
                     bot.sendGroupMsg(event.getGroupId(), post, false);
+                }else {
+                    String[] split = build.split("([，。！])|(?<=？)");
+                    int i = 0;
+                    for (String s : split) {
+                        if (i == 0) {
+                            bot.sendGroupMsg(event.getGroupId(), s, false);
+                            i++;
+                            continue;
+                        }
+                        Thread.sleep(s.length() * 500);
+                        bot.sendGroupMsg(event.getGroupId(), s, false);
+                    }
                 }
-                synchronized (this) {
-                    Gemini.addMsg(event.getGroupId(), "assistant", "assistant", post);
+            }else {
+                if (post.length() > 70){
+                    bot.sendGroupMsg(event.getGroupId(), post, false);
+                }else {
+                    String[] split = post.split("([，。！])|(?<=？)");
+                    for (String s : split) {
+                        Thread.sleep(s.length() * 500);
+                        bot.sendGroupMsg(event.getGroupId(), s, false);
+                    }
                 }
-                return;
-            } catch (Exception e) {
-                if (i >= 1){
-                    bot.sendGroupMsg(event.getGroupId(), "错误信息:" + e.toString(), false);
-                    return;
-                }
-                i++;
             }
+            Gemini.addMsg(event.getGroupId(), "assistant", "assistant", post);
+            return;
+        } catch (Exception e) {
+            if (b) {
+                bot.sendGroupMsg(event.getGroupId(), "似了", false);
+            }
+            Log.error(e);
+            return;
         }
+
     }
 
 
@@ -446,56 +551,67 @@ public class ExamplePlugin {
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(str);
         if(m.matches()){
-            //收到了图片
-            pattern = "\\[CQ:image.*?url=([^,]+).*?\\]";
-            r = Pattern.compile(pattern);
-            m = r.matcher(str);
-            if (m.find()) {
-                String imageUrl = m.group(1);
-                imageUrl = imageUrl.replaceAll("&amp;","&");
-                try {
-//                  bot.sendGroupMsg(event.getGroupId(),imageUrl,false);
-                    String s = NetRequest.postFormUrl("http://120.25.164.240:5000", imageUrl);
-                    System.out.println(s);
-                    JSONObject jsonObject = new JSONObject(s);
-                    if (jsonObject.getInt("code")==1) {
-                        if (jsonObject.getBoolean("contains")) {
-                            bot.deleteMsg(event.getMessageId());
-                            bot.sendGroupMsg(event.getGroupId(), "检测到奶龙", false);
-                        }
-                    }
-                } catch (IOException e) {
-                    Log.warn(e);
-                }
-            }
+//            //收到了图片
+//            pattern = "\\[CQ:image.*?url=([^,]+).*?\\]";
+//            r = Pattern.compile(pattern);
+//            m = r.matcher(str);
+//            if (m.find()) {
+//                String imageUrl = m.group(1);
+//                imageUrl = imageUrl.replaceAll("&amp;","&");
+//                try {
+//                    String s = NetRequest.postFormUrl("http://120.25.164.240:5000", imageUrl);
+//                    System.out.println(s);
+//                    JSONObject jsonObject = new JSONObject(s);
+//                    if (jsonObject.getInt("code")==1) {
+//                        if (jsonObject.getBoolean("contains")) {
+//                            bot.deleteMsg(event.getMessageId());
+//                            bot.sendGroupMsg(event.getGroupId(), "检测到奶龙", false);
+//                        }
+//                    }
+//                } catch (IOException e) {
+//                    Log.warn(e);
+//                }
+//            }
 
         } else {
             //收到纯文本
             String msg = "";
             if (str.contains("[CQ:at,qq=391459725")) {
-                pattern = "(?<=\\[CQ:at.*\\]).*";
-                r = Pattern.compile(pattern);
-                m = r.matcher(str);
-
-                if (m.find()) {
-                    msg = m.group();
-                }
+                pattern = "\\[CQ:at,qq=391459725[^\\]]*\\]";
+                msg = str.replaceAll(pattern, "[@bot]");
             } else {
                 msg = str;
             }
-            // 没收到图片
             synchronized (this) {
                 new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
                 Gemini.addMsg(event.getGroupId(), "user", event.getUserId().toString(), "[@" + event.getUserId() + "]:" + msg);
                 new TimeTracker(event.getGroupId()+"").addTime();
-                if(new TimeTracker(event.getGroupId()+"").isActive()){
-                    aichat(bot,event);
-                }
+            }
+            if(new TimeTracker(event.getGroupId()+"").isActive()){
+                new Thread(()->{
+                    aichat(bot,event,false);
+                }).start();
             }
         }
     }
 
+    private JSONObject readJsonFile(File file) {
+        String content = readFileToString(file);
+        return new JSONObject(content);
+    }
 
+    private String readFileToString(File file) {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file: " + file.getPath(), e);
+        }
+        return sb.toString();
+    }
 
 
 }

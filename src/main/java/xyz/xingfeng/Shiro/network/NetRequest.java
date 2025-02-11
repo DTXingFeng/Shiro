@@ -151,7 +151,9 @@ public class NetRequest {
         }
 
         Request request = requestbuilder.build();
-        OkHttpClient okHttpClient = new OkHttpClient();
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
         Response response = okHttpClient.newCall(request).execute();
         String string = response.body().string();
         System.out.println(string);

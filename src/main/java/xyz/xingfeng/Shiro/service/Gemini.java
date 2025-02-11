@@ -3,6 +3,7 @@ package xyz.xingfeng.Shiro.service;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import xyz.xingfeng.Shiro.Tool.Static;
 import xyz.xingfeng.Shiro.network.NetRequest;
 
 import java.io.*;
@@ -13,11 +14,36 @@ import java.util.HashMap;
 
 //gemini聊天
 public class Gemini {
-    public Gemini(){
+    private String apiKey;
+    private String url;
+    private String modelName;
+    private String prompt;
+
+    public Gemini() {
 
     }
+
+    private JSONObject readJsonFile(File file) {
+        String content = readFileToString(file);
+        return new JSONObject(content);
+    }
+
+    private String readFileToString(File file) {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file: " + file.getPath(), e);
+        }
+        return sb.toString();
+    }
+
     private JSONObject model = new JSONObject();
     public Gemini(Long groupId) throws Exception {
+        initialization();
         Path chatHistoryDir = Paths.get("ChatHistory");
         Path filePath = chatHistoryDir.resolve(groupId + ".json");
         File f = filePath.toFile();
@@ -39,11 +65,11 @@ public class Gemini {
         //构建提示词
         JSONObject system = new JSONObject();
         system.put("role","system");
-        system.put("content","你叫瑶瑶，网名是夏瑶欣ovo，今年17岁是高中女生，居住在北京，生日是5月20日，你喜欢互联网。你现在在一个QQ群里聊天，这意味着大部分时间你的回复应该是简短的几句话，你必须通过当前的聊天记录回复接下来你要说的话，禁止装作失忆，禁止复读或复读自己说过的话，这会令人不适。\\n回答要求:\\n- 禁止询问别人、禁止命令别人、禁止说敬语、禁止问当前讨论的是什么;\\n- 熟练掌握网络用语、谐音梗或者专业术语说话，回答的内容要尽可能的口语化，一次可以说多句话;\\n- 回复的主要话题应该是最新时间的而不是早期历史对话;\\n- 如果你的回答是针对某个人的，则可以使用‘[@QQ]+回答’的方式艾特它。将‘QQ’替换成你要艾特的人的QQ号(例如[@1234567890]你爬)，注意：一段内容最多只能有一个艾特;\\n- 对聊天记录进行甄别，你要辨别这一条消息是不是在和你说话，不要总是艾特别人\\n- 不要用‘你好’，‘嗨！’这种带有激动情感的回复，说话情绪不要太激烈，没有正常人会这样说话，你是一个人类，不是机器人;\\n- 不要回复任何奇怪的内容，例如：‘很抱歉，我不能继续这个话题’\\n- 当别人的言语中对你不友好时，你的话语会充满攻击性以及阴阳怪气;");
+        system.put("content",prompt);
         //构建模型请求
         model = new JSONObject();
-        model.put("model","gemini-1.5-pro-latest");
-        model.put("temperature",0.8);
+        model.put("model",modelName);
+        model.put("temperature",1.3);
         model.put("stream",false);
         JSONArray msg = new JSONArray();
         msg.put(system);
@@ -53,13 +79,32 @@ public class Gemini {
         model.put("messages",msg);
     }
 
+    private void initialization(){
+        Path aiConfigDir = Paths.get("aiConfig");
+
+        // 读取主配置文件
+        JSONObject configJson = readJsonFile(new File(Static.CONFIG_PATH));
+        String aiConfigFile = configJson.getString("aiConfigFile");
+
+        // 读取AI配置文件
+        File aiConfigDav = aiConfigDir.resolve(aiConfigFile + ".json").toFile();
+        JSONObject aiConfigJson = readJsonFile(aiConfigDav);
+        this.apiKey = aiConfigJson.getString("apiKey");
+        this.url = aiConfigJson.getString("url");
+        this.modelName = aiConfigJson.getString("modelName");
+
+        // 读取提示文件
+        File promptFile = aiConfigDir.resolve("prompt").toFile();
+        this.prompt = readFileToString(promptFile);
+    }
+
     public String post() throws Exception {
         HashMap<String, String> map = new HashMap<>();
-        map.put("Authorization", "Bearer sk-9stC9PR6i1kHahQWcAtJosXFW1xXLC8nns0kH9tdLl1Htqov");
-        String post = NetRequest.post("https://api.chatanywhere.tech/v1/chat/completions", model.toString(), map);
+        map.put("Authorization", "Bearer "+apiKey);
+        String post = NetRequest.post(url, model.toString(), map);
         JSONObject jsonObject = new JSONObject(post);
         if (jsonObject.has("error")) {
-            return jsonObject.getString("error");
+            return jsonObject.get("error").toString();
         }
         String string = jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
         return string;
@@ -111,8 +156,8 @@ public class Gemini {
                 if (stringBuilder.length() > 0) {
                     jsonObject = new JSONObject(stringBuilder.toString());
                     JSONArray jsonArray = jsonObject.getJSONArray("msg");
-                    if (jsonArray.length() >= 150) {
-                        int removeCount = jsonArray.length() - 149;
+                    if (jsonArray.length() >= 100) {
+                        int removeCount = jsonArray.length() - 99;
                         for (int i = 0; i < removeCount; i++) {
                             jsonArray.remove(0);
                         }
