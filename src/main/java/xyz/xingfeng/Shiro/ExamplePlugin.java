@@ -56,23 +56,29 @@ public class ExamplePlugin {
         builder.append("今日老婆：获取今日老婆\n");
         builder.append("服务器状态：获取当前服务器状态\n");
         builder.append("打开自动群聊：打开自动群聊功能\n");
-        builder.append("关闭自动群聊：关闭自动群聊功能");
+        builder.append("关闭自动群聊：关闭自动群聊功能\n");
+        builder.append("切换ai配置 [模型名]：切换ai配置\n");
+        builder.append("ai配置列表：查看所有ai配置\n");
         bot.sendGroupMsg(event.getGroupId(), builder.toString(), false);
     }
+
     //重置当前群记忆
     @GroupMessageHandler
-    @MessageHandlerFilter(cmd = "重置记忆", senders = 2695570953L)
+    @MessageHandlerFilter(cmd = "重置记忆")
     public void resetMemory(Bot bot, GroupMessageEvent event) {
         Path chatHistoryDir = Paths.get("ChatHistory");
         Path filePath = chatHistoryDir.resolve(event.getGroupId() + ".json");
         File f = filePath.toFile();
         if (f.exists()) {
-            f.delete();
+            boolean delete = f.delete();
+            if (delete){
+                bot.sendGroupMsg(event.getGroupId(), "记忆已重置", false);
+            }else {
+                bot.sendGroupMsg(event.getGroupId(), "文件删除失败", false);
+            }
         }
-        bot.sendGroupMsg(event.getGroupId(), "记忆已重置", false);
+
     }
-
-
 
     /**
      * 守望赚钱催促器
@@ -118,7 +124,7 @@ public class ExamplePlugin {
     /**
      * 今日老婆
      * @param bot
-     * @param event\
+     * @param event
      */
     @GroupMessageHandler
     @MessageHandlerFilter(cmd = "今日老婆")
@@ -492,46 +498,18 @@ public class ExamplePlugin {
             String post = "";
             post = new Gemini(event.getGroupId()).post();
             post = post.trim();
-            Pattern compile = Pattern.compile("(?s)^\\[@(.*)\\].*");
-            Matcher mat = compile.matcher(post);
-            if (mat.find()) {
-                String qq = mat.group(1);
-                post = post.replaceAll("\\[@" + qq + "\\]", "");
-                String build = MsgUtils.builder().at(Long.parseLong(qq)).text(post).build();
-                if (build.length() > 80){
-                    bot.sendGroupMsg(event.getGroupId(), post, false);
-                }else {
-                    String[] split = build.split("([，。！])|(?<=？)");
-                    int i = 0;
-                    for (String s : split) {
-                        if (i == 0) {
-                            bot.sendGroupMsg(event.getGroupId(), s, false);
-                            i++;
-                            continue;
-                        }
-                        Thread.sleep(s.length() * 500);
-                        bot.sendGroupMsg(event.getGroupId(), s, false);
-                    }
-                }
-            }else {
-                if (post.length() > 70){
-                    bot.sendGroupMsg(event.getGroupId(), post, false);
-                }else {
-                    String[] split = post.split("([，。！])|(?<=？)");
-                    for (String s : split) {
-                        Thread.sleep(s.length() * 500);
-                        bot.sendGroupMsg(event.getGroupId(), s, false);
-                    }
-                }
-            }
-            Gemini.addMsg(event.getGroupId(), "assistant", "assistant", post);
-            return;
+            ActionData<MsgId> msgIdActionData = bot.sendGroupMsg(event.getGroupId(), post, false);
+            event.setMessageId(msgIdActionData.getRetCode());
+            event.setUserId(391459725L);
+            event.getSender().setRole("member");
+            event.getSender().setNickname("刑风OS");
+            event.setMessage(post);
+            Gemini.addMsg(event, "assistant",false);
         } catch (Exception e) {
             if (b) {
                 bot.sendGroupMsg(event.getGroupId(), "似了", false);
             }
             Log.error(e);
-            return;
         }
 
     }
@@ -584,7 +562,7 @@ public class ExamplePlugin {
             }
             synchronized (this) {
                 new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
-                Gemini.addMsg(event.getGroupId(), "user", event.getUserId().toString(), "[@" + event.getUserId() + "]:" + msg);
+                Gemini.addMsg(event,"user",true);
                 new TimeTracker(event.getGroupId()+"").addTime();
             }
             if(new TimeTracker(event.getGroupId()+"").isActive()){
