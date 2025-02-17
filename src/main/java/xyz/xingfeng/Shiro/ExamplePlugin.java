@@ -498,6 +498,9 @@ public class ExamplePlugin {
             String post = "";
             post = new Gemini(event.getGroupId()).post();
             post = post.trim();
+            if (post.equals("")) {
+                throw new Exception("返回为空");
+            }
             ActionData<MsgId> msgIdActionData = bot.sendGroupMsg(event.getGroupId(), post, false);
             event.setMessageId(msgIdActionData.getRetCode());
             event.setUserId(391459725L);

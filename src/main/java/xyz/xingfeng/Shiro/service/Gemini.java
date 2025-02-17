@@ -3,6 +3,7 @@ package xyz.xingfeng.Shiro.service;
 
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
 import okhttp3.*;
+import org.apache.juli.logging.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.xingfeng.Shiro.Tool.Static;
@@ -140,6 +141,9 @@ public class Gemini {
         while ((line = reader.readLine()) != null) {
             processLine(line);
         }
+        if (fullResponse.toString().equals("")){
+            System.out.println(fullResponse);
+        }
         return fullResponse.toString();
     }
 
@@ -164,7 +168,6 @@ public class Gemini {
                     if (delta.has("content")) {
                         String content = delta.getString("content");
                         fullResponse.append(content);
-                        System.out.print(content); // 实时输出
                     }
 
                     // 检查是否结束
