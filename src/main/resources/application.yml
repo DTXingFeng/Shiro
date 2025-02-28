@@ -6,9 +6,20 @@ spring:
 # ??????????
 shiro:
   ws:
+    access-token : "2tPKJHWm4UpRbXMAkAEx"
     client:
       enable: true
-      url: "ws://192.168.0.111:3001"
+      url: "ws://127.0.0.1:3001"
+
+
+logging:
+  config: classpath:log4j2.xml  # 指定 Log4j2 配置文件
+  charset:
+    console: UTF-8  # 强制控制台使用 UTF-8 编码
+  file:
+    charset: UTF-8  # 强制日志文件使用 UTF-8 编码
+
+
 
 myapp:
   server:

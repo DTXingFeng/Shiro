@@ -528,7 +528,7 @@ public class ExamplePlugin {
     public void 提示(Bot bot,GroupMessageEvent event){
         System.out.println(event.getMessage());
         String str = event.getMessage();
-        String pattern = "^\\[CQ:image.*\\]";
+        String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(str);
         if(m.matches()){
@@ -555,14 +555,6 @@ public class ExamplePlugin {
 //            }
 
         } else {
-            //收到纯文本
-            String msg = "";
-            if (str.contains("[CQ:at,qq=391459725")) {
-                pattern = "\\[CQ:at,qq=391459725[^\\]]*\\]";
-                msg = str.replaceAll(pattern, "[@bot]");
-            } else {
-                msg = str;
-            }
             synchronized (this) {
                 new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
                 Gemini.addMsg(event,"user",true);

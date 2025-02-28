@@ -247,11 +247,8 @@ public class Gemini {
                 if (stringBuilder.length() > 0) {
                     jsonObject = new JSONObject(stringBuilder.toString());
                     JSONArray jsonArray = jsonObject.getJSONArray("msg");
-                    if (jsonArray.length() >= 100) {
-                        int removeCount = jsonArray.length() - 99;
-                        for (int i = 0; i < removeCount; i++) {
-                            jsonArray.remove(0);
-                        }
+                    while (jsonArray.toString().length() * 1.5 > 10000){
+                        jsonArray.remove(0);
                     }
                     jsonArray.put(msg);
                     jsonObject.put("msg", jsonArray);
