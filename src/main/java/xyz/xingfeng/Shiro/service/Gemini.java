@@ -16,8 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 //gemini聊天
@@ -81,6 +80,8 @@ public class Gemini {
         }
         bufferedReader.close();
         JSONArray groupDatas = new JSONObject(sb.toString()).getJSONArray("msg");
+        //检查历史记录中是否有关键词
+        keywordDetection(groupDatas);
         //构建提示词
         JSONObject system = new JSONObject();
         system.put("role","system");
@@ -103,6 +104,67 @@ public class Gemini {
         }
         model.put("messages",msg);
     }
+
+    private void keywordDetection(JSONArray jsonArray){
+        //从知识库中获得关键词
+        File file = Paths.get("aiConfig").resolve("梗解析.json").toFile();
+        if (!file.exists()){
+            return;
+        }
+        //获得关键词
+        // 读取关键词
+        JSONArray data = readJsonFile(file).getJSONArray("data");
+        Set<String> keywords = new HashSet<>(); // 使用Set来避免重复关键词
+        Map<String, JSONObject> keywordToDataMap = new HashMap<>(); // 关键词到对应数据的映射
+
+        for (int i = 0; i < data.length(); i++) {
+            JSONObject entry = data.getJSONObject(i);
+            JSONArray 关键词Array = entry.getJSONArray("关键词");
+            for (int j = 0; j < 关键词Array.length(); j++) {
+                String keyword = 关键词Array.getString(j);
+                if (keywords.contains(keyword)) {
+                    System.out.println("重复关键词: " + keyword);
+                } else {
+                    keywords.add(keyword);
+                    keywordToDataMap.put(keyword, entry); // 将关键词与对应的数据关联
+                }
+            }
+        }
+
+        // 提取半数消息的内容
+        for (int i = jsonArray.length() / 2; i < jsonArray.length(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+            if (!jsonObject.getString("role").equals("user")){
+                continue;
+            }
+            String content = new JSONObject(jsonObject.getString("content")).getString("content");
+            for (String keyword : keywords) {
+                if (content.contains(keyword)) {
+                    JSONObject matchedData = keywordToDataMap.get(keyword);
+                    JSONArray 关键词Array = matchedData.getJSONArray("关键词");
+                    String 解析 = matchedData.getString("解析");
+                    JSONArray 接梗公式 = matchedData.getJSONArray("接梗公式");
+
+                    // 构建输出
+                    StringBuilder output = new StringBuilder();
+                    output.append("\n关键词：\n");
+                    for (int j = 0; j < 关键词Array.length(); j++) {
+                        output.append(关键词Array.getString(j)).append("\n");
+                    }
+                    output.append("分析：\n").append(解析).append("\n");
+                    output.append("接梗公式：\n");
+                    for (int j = 0; j < 接梗公式.length(); j++) {
+                        output.append(接梗公式.getString(j)).append("\n");
+                    }
+
+                    // 将结果添加到prompt中（假设prompt是一个全局变量）
+                    prompt += output.toString();
+                }
+            }
+        }
+    }
+
+
 
     private void initialization(){
         Path aiConfigDir = Paths.get("aiConfig");

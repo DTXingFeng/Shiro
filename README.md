@@ -1,0 +1,16 @@
+# 基于Shiro的qq机器人  
+<div align="center">
+
+![Status](https://img.shields.io/badge/状态-开发中-yellow)
+
+</div>
+
+## 📄文游操作
+适配了
+
+## 致谢
+[Shiro](https://github.com/MisakaTAT/Shiro):基于 OneBot 协议的 QQ机器人 快速开发框架  
+[LLOneBot](https://github.com/LLOneBot/LLOneBot):LiteLoaderQQNT 插件，实现 OneBot 11 和 Satori 协议，用于 QQ 机器人开发
+
+## Stargazers over time
+[![Stargazers over time](https://starchart.cc/DTXingFeng/Shiro.svg?variant=adaptive)](https://starchart.cc/DTXingFeng/Shiro)

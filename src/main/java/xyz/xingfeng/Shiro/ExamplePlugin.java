@@ -117,7 +117,7 @@ public class ExamplePlugin {
                 .text("磁盘使用率: ")
                 .text(systemMonitor.getDiskUsage() + "\n")
                 .text("持续运行时间: ")
-                .text(systemMonitor.getSystemRunTime() + "\n")
+                .text(systemMonitor.getSystemRunTime())
                 .build();
         bot.sendGroupMsg(event.getGroupId(),build, false);
     }

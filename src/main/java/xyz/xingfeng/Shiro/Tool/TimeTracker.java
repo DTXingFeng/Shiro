@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * 该类用于统计群中活跃度，以判断bot是否发言
@@ -20,16 +21,13 @@ public class TimeTracker {
      * 限定时间内需要多少信息才判定活跃
      */
     private static final int COUNT = 10;
-    /**
-     * 发言完需要冷却的时间
-     */
-    private static final int COOL_DOWN = 30;
 
 
     private String groupId = null;
     public TimeTracker(String groupId){
         this.groupId = groupId;
     }
+    public TimeTracker(){}
 
     /**
      * 查看该群功能是否打开
@@ -96,24 +94,47 @@ public class TimeTracker {
      * 是否符合活跃度
      * @return
      */
-    public boolean isActive(){
-        if (!isOpen()){
+    public boolean isActive() {
+        if (!isOpen()) {
             return false;
         }
         ArrayList<String> s = readerFile();
-        if (s == null || s.equals("")){
+        if (s == null || s.isEmpty()) {
             return false;
         }
-        if (s.size() < COUNT){
+        if (s.size() < COUNT) {
             return false;
         }
-        //检查发言冷却
+
+        // 动态生成冷却时间
+        int coolDownTime = generateCoolDownTime();
+        System.out.println("Generated cool down time: " + coolDownTime + " seconds");
+
+        // 检查发言冷却
         long l = System.currentTimeMillis();
-        if (l - getLastTime() < COOL_DOWN * 1000){
+        if (l - getLastTime() < coolDownTime * 1000) {
             return false;
         }
         updateTime();
         return true;
+    }
+
+    /**
+     * 生成符合正态分布的冷却时间（20秒到180秒）
+     */
+    public int generateCoolDownTime() {
+        Random random = new Random();
+        double mean = 100.0; // 均值，冷却时间的中间值
+        double stdDev = 30.0; // 标准差，控制分布的宽度
+
+        // 生成符合正态分布的值
+        double gaussianValue = random.nextGaussian() * stdDev + mean;
+
+        // 将值限制在20秒到180秒之间
+        int coolDownTime = (int) Math.round(gaussianValue);
+        coolDownTime = Math.max(20, Math.min(180, coolDownTime));
+
+        return coolDownTime;
     }
 
     /**
