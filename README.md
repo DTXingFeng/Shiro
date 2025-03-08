@@ -5,8 +5,9 @@
 
 </div>
 
-## 📄文游操作
-适配了
+## 📄项目简介
+- 🤖 LLOneBot 客户端协议支持
+- ☑️ Shiro 框架支持
 
 ## 致谢
 [Shiro](https://github.com/MisakaTAT/Shiro):基于 OneBot 协议的 QQ机器人 快速开发框架  

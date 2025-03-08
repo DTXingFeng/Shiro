@@ -38,7 +38,7 @@ public class PixivTop {
         // 创建请求
         Request request = new Request.Builder()
                 .url(PIXIV_RANKING_URL)
-                .addHeader("cookie","p_ab_id=0; p_ab_id_2=5; p_ab_d_id=985308277; yuid_b=FJUiJmI; privacy_policy_notification=0; a_type=0; login_ever=yes; privacy_policy_agreement=7; c_type=22; b_type=1; PHPSESSID=55434770_WCVAjIAOG56yDFqeqzwbV4bl5pCOMUiq; device_token=6f62c30588fac868ce8d8d1ccc927469; __cf_bm=5xqw2uCbUxMB3mB6PNwcYmsNfpOHiPhj6gHGgdmUwjs-1732615273-1.0.1.1-PSHOkd2CCn_JZhDlB2dcbtZtnjs8sklYcs1og3Zaal0nYxc2ysT4Xlqtu2UAK.yPXvFLDMKqxQ6mMwqflAmWAZij9Q2B6v2HFreZZe9SaPM; cf_clearance=fhrYJBRlLVG.ZRPv9nnJpQL3txP8riIIE_NwnDyNJXw-1732615276-1.2.1.1-CDWI9HG5gd8pqsDY5J0NPadKmoUoopFctFCJJVilIxpXNCfA0Or3.JOh63vT1.m1GdeoDVi43T8EFkxOArZ4wuPM6KGsQnU71.EB5F24aNfA4b_H23Zau7T.u4IZiFInn1auYsduWM9HvwH1BLo_dgGap7Bi46YpGswOUi6PYzC2vTUxYi_2M.Pg5iT22P_k4BoL5Uw3LRHPHBsSxocdcmxV9J70uyCLuj0iUw5yRv_ZHUVVUJ4lDqM6vHP0sW63rgTGSf_wlWsMDv_nC8bmVSTSZaC9L66D2chgPKRjSbhFmCmbBo5fas2KKabe1c_oR772DAQtsRdVA1nii2iHsubVyIPUV8h0Uc4CxxpzV1hnRsN_jUqjkPXWf7Ivv8QB67XNRPUYXza9JnqbSz6GGQ")
+                .addHeader("cookie","")
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
