@@ -269,7 +269,7 @@ public class ExamplePlugin {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null; // 实现待补充
+        return null;
     }
 
     private void sendExistingLoverMessage(Bot bot, String groupId, String userId, String existingLover) {
