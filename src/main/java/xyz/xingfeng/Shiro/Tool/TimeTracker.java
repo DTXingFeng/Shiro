@@ -104,6 +104,14 @@ public class TimeTracker {
         if (s == null || s.isEmpty()) {
             return false;
         }
+        // 动态生成冷却时间
+        int coolDownTime = generateCoolDownTime();
+
+        // 检查发言冷却
+        long l = System.currentTimeMillis();
+        if (l - getLastTime() < coolDownTime * 1000) {
+            return false;
+        }
         //发言频率是否达标
         if (s.size() < COUNT) {
             return false;
@@ -114,15 +122,6 @@ public class TimeTracker {
             updateTime();
             writeSpeechDesire(0);
             return true;
-        }
-
-        // 动态生成冷却时间
-        int coolDownTime = generateCoolDownTime();
-
-        // 检查发言冷却
-        long l = System.currentTimeMillis();
-        if (l - getLastTime() < coolDownTime * 1000) {
-            return false;
         }
         updateTime();
         return true;
@@ -250,6 +249,10 @@ public class TimeTracker {
         //写入文件
         write(strings);
         double v = readSpeechDesire();
+        if (v >= 100){
+            writeSpeechDesire(100);
+            return;
+        }
         //随机增加1-4
         v += new Random().nextInt(4) + 1;
         writeSpeechDesire(v);
