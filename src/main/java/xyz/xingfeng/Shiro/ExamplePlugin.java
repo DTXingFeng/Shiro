@@ -493,7 +493,6 @@ public class ExamplePlugin {
      * ai聊天
      */
     public synchronized void aichat(Bot bot,GroupMessageEvent event,boolean b) {
-
         try {
             String post = "";
             post = new Gemini(event.getGroupId()).post();
