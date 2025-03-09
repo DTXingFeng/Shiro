@@ -95,20 +95,29 @@ public class TimeTracker {
      * @return
      */
     public boolean isActive() {
+        //检查功能是否打开
         if (!isOpen()) {
             return false;
         }
+        //文件是否为空
         ArrayList<String> s = readerFile();
         if (s == null || s.isEmpty()) {
             return false;
         }
+        //发言频率是否达标
         if (s.size() < COUNT) {
             return false;
+        }
+        //发言欲是否达标
+        if (isReach()){
+            //更新发言时间
+            updateTime();
+            writeSpeechDesire(0);
+            return true;
         }
 
         // 动态生成冷却时间
         int coolDownTime = generateCoolDownTime();
-        System.out.println("Generated cool down time: " + coolDownTime + " seconds");
 
         // 检查发言冷却
         long l = System.currentTimeMillis();
@@ -227,7 +236,7 @@ public class TimeTracker {
     }
 
     /**
-     * 添加时间
+     * 添加时间，以及更新发言欲
      */
     public void addTime() {
         Path chatHistoryDir = Paths.get("TimeTracker");
@@ -240,6 +249,10 @@ public class TimeTracker {
         strings.add(System.currentTimeMillis() + "");
         //写入文件
         write(strings);
+        double v = readSpeechDesire();
+        //随机增加1-4
+        v += new Random().nextInt(4) + 1;
+        writeSpeechDesire(v);
     }
 
     /**
@@ -281,6 +294,66 @@ public class TimeTracker {
             bufferedReader.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 判定是否达到阈值
+     */
+    public boolean isReach(){
+        double v = readSpeechDesire();
+        //发言欲为1-40时为1%发言率,40之后指数上升，直到100为100%发言率
+        if (v >= 1 && v <= 40){
+            return new Random().nextInt(100) < 1;
+        }else if(v > 40 && v <= 100) {
+            return new Random().nextInt(100) < Math.pow(1.1, v - 40);
+        }
+        return false;
+    }
+
+
+
+    /**
+     * 获取发言欲文件路径
+     */
+    private Path getSpeechDesireFilePath() {
+        Path chatHistoryDir = Paths.get("TimeTracker");
+        return chatHistoryDir.resolve(groupId + "_speechDesire.txt");
+    }
+
+    /**
+     * 读取发言欲数值
+     */
+    public double readSpeechDesire() {
+        Path filePath = getSpeechDesireFilePath();
+        File f = filePath.toFile();
+        if (!f.exists()) {
+            //创建文件，连带文件夹
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create speechDesire file", e);
+            }
+            return 0;
+        }
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(f))) {
+            String value = bufferedReader.readLine();
+            return value == null ? 0 : Double.parseDouble(value);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read speechDesire file", e);
+        }
+    }
+
+    /**
+     * 写入发言欲数值
+     */
+    public void writeSpeechDesire(double value) {
+        Path filePath = getSpeechDesireFilePath();
+        File f = filePath.toFile();
+        try (FileWriter fileWriter = new FileWriter(f)) {
+            fileWriter.write(String.valueOf(value));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write speechDesire file", e);
         }
     }
 }

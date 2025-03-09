@@ -6,6 +6,7 @@
 </div>
 
 ## 📄项目简介
+功能有些杂，包含基于deepseek的智能聊天、今日群友老婆、java Minecraft 服务器查询、《悼蓝争端》文游自动对战。
 - 🤖 LLOneBot 客户端协议支持
 - ☑️ Shiro 框架支持
 
