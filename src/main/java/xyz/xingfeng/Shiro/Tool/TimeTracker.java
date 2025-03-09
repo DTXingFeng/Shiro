@@ -112,16 +112,17 @@ public class TimeTracker {
         if (l - getLastTime() < coolDownTime * 1000) {
             return false;
         }
-        //发言频率是否达标
-        if (s.size() < COUNT) {
-            return false;
-        }
+
         //发言欲是否达标
         if (isReach()){
             //更新发言时间
             updateTime();
             writeSpeechDesire(0);
             return true;
+        }
+        //发言频率是否达标
+        if (s.size() < COUNT) {
+            return false;
         }
         updateTime();
         return true;
@@ -309,7 +310,7 @@ public class TimeTracker {
         if (v >= 1 && v <= 40){
             return new Random().nextInt(100) < 1;
         }else if(v > 40 && v <= 100) {
-            return new Random().nextInt(100) < Math.pow(1.1, v - 40);
+            return new Random().nextInt(100) < Math.pow(1.08, v - 40);
         }
         return false;
     }
