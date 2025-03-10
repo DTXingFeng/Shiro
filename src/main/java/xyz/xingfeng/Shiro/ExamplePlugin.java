@@ -527,11 +527,14 @@ public class ExamplePlugin {
     public void 提示(Bot bot,GroupMessageEvent event){
         System.out.println(event.getMessage());
         String str = event.getMessage();
-        String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]";
+        String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]||^\\[CQ:mface.*\\]";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(str);
         if(m.matches()){
-//            //收到了图片
+            //如果是图片
+            if (str.startsWith("[CQ:image")){
+
+            }
 //            pattern = "\\[CQ:image.*?url=([^,]+).*?\\]";
 //            r = Pattern.compile(pattern);
 //            m = r.matcher(str);
