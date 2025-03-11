@@ -1,10 +1,7 @@
 package xyz.xingfeng.Shiro.Tool;
 
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
+import okhttp3.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,6 +24,7 @@ public class ImageAnalysis {
     private static String fileName = "";
     private String subType = "";
     private String imageUrl;
+    private String size;
 
     public ImageAnalysis(String cqImage) {
         //获取文件名
@@ -51,20 +49,82 @@ public class ImageAnalysis {
             imageUrl = m.group(1);
             imageUrl = imageUrl.replaceAll("&amp;", "&");
         }
+        //获取图片大小
+        pattern = "file_size=(.*?)]";
+        r = Pattern.compile(pattern);
+        m = r.matcher(cqImage);
+        if (m.find()) {
+            size = m.group(1);
+        }
+    }
+
+    /**
+     * 分析图片，返回分析结果
+     */
+    public String analysis() {
+        //先看看图片是什么类型
+        if (subType.equals("0")){
+            //是普通图片，没有保存的必要，但也需要分析
+
+        }
+        //再看看有没有相同的图片
+        if (isSameImage()) {
+            //有就看看有没有保存的分析结果
+            Paths.get("memes\\savedResults", fileName+".txt");
+        }
+
+    }
+
+    /**
+     * 查询是否有相同的图片
+     */
+    public boolean isSameImage() {
+        File file = Paths.get("memes\\image", fileName).toFile();
+        return file.exists();
+    }
+
+    /**
+     * 下载图片
+     */
+    private void downloadImage() throws Exception {
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        Request request = new Request.Builder()
+                .url(imageUrl)
+                .build();
+        Response response = client.newCall(request).execute();
+        byte[] bytes = response.body().bytes();
+        Path path = Paths.get("memes\\image", fileName);
+        File file = path.toFile();
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        //写入文件
+        try (FileInputStream fis = new FileInputStream(file)) {
+            fis.read(bytes);
+        }
     }
 
     /**
      * 通过视觉模型分析表情包/图片
      */
-    public void modelAnalysis() {
-
-
+    public String modelAnalysis() throws Exception {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
         MediaType mediaType = MediaType.parse("application/json");
         RequestBody body = RequestBody.create(mediaType,buildRequestMessage());
-
+        Request request = new Request.Builder()
+                .url("https://api.siliconflow.cn/v1/chat/completions")
+                .method("POST", body)
+                .addHeader("Authorization", "Bearer "+Static.getJson().getString("imageApiKey"))
+                .addHeader("Content-Type", "application/json")
+                .build();
+        Response response = client.newCall(request).execute();
+        String string = response.body().string();
+        JSONObject jsonObject = new JSONObject(string);
+        return jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
     }
 
     /**
