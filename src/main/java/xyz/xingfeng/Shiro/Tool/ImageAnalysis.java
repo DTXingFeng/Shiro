@@ -5,10 +5,7 @@ import okhttp3.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
@@ -61,18 +58,37 @@ public class ImageAnalysis {
     /**
      * 分析图片，返回分析结果
      */
-    public String analysis() {
+    public String analysis() throws Exception {
         //先看看图片是什么类型
         if (subType.equals("0")){
             //是普通图片，没有保存的必要，但也需要分析
-
+            return modelAnalysis();
         }
+        File file = Paths.get("memes\\savedResults", fileName + ".txt").toFile();
         //再看看有没有相同的图片
         if (isSameImage()) {
             //有就看看有没有保存的分析结果
-            Paths.get("memes\\savedResults", fileName+".txt");
+            if (file.exists()) {
+                //有就读取
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                String temp = "";
+                StringBuilder sb = new StringBuilder();
+                while ((temp = br.readLine()) != null) {
+                    sb.append(temp);
+                }
+                return sb.toString();
+            }
+        }else {
+            //没有就下载
+            downloadImage();
         }
-
+        //分析
+        String result = modelAnalysis();
+        //保存分析结果
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            bw.write(result);
+        }
+        return result;
     }
 
     /**
