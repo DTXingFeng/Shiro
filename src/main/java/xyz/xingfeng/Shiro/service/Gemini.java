@@ -91,11 +91,6 @@ public class Gemini {
         model.put("model",modelName);
         model.put("temperature",1.3);
         model.put("stream",true);
-        //构建bot自己的信息，让bot认识自己
-//        JSONObject self_msg = new JSONObject();
-//        self_msg.put("self_qq","391459725");
-//        self_msg.put("self_role","member");
-//        model.put("context",self_msg);
         //将历史记录导入
         JSONArray msg = new JSONArray();
         msg.put(system);

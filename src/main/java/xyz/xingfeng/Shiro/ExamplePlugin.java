@@ -429,7 +429,7 @@ public class ExamplePlugin {
         for (File file : files) {
             builder.append(file.getName().replace(".json","")).append("\n");
         }
-        bot.sendGroupMsg(event.getGroupId(),builder.toString(),false);
+        bot.sendGroupMsg(event.getGroupId(), builder.toString(), false);
     }
 
     /**
@@ -527,7 +527,7 @@ public class ExamplePlugin {
     public void 提示(Bot bot,GroupMessageEvent event){
         System.out.println(event.getMessage());
         String str = event.getMessage();
-        String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]||^\\[CQ:mface.*\\]";
+        String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]||^\\[CQ:mface.*\\]||^\\[CQ:xml.*\\]||^\\[CQ:share.*\\]||^\\[CQ:music.*\\]||^\\[CQ:forward.*\\]";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(str);
         if(m.matches()){

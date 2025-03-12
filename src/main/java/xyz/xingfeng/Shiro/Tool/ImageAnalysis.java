@@ -64,31 +64,34 @@ public class ImageAnalysis {
             //是普通图片，没有保存的必要，但也需要分析
             return modelAnalysis();
         }
-        File file = Paths.get("memes\\savedResults", fileName + ".txt").toFile();
-        //再看看有没有相同的图片
-        if (isSameImage()) {
-            //有就看看有没有保存的分析结果
-            if (file.exists()) {
-                //有就读取
-                BufferedReader br = new BufferedReader(new FileReader(file));
-                String temp = "";
-                StringBuilder sb = new StringBuilder();
-                while ((temp = br.readLine()) != null) {
-                    sb.append(temp);
+        if (subType.equals("1")) {
+            File file = Paths.get("memes\\savedResults", fileName + ".txt").toFile();
+            //再看看有没有相同的图片
+            if (isSameImage()) {
+                //有就看看有没有保存的分析结果
+                if (file.exists()) {
+                    //有就读取
+                    BufferedReader br = new BufferedReader(new FileReader(file));
+                    String temp = "";
+                    StringBuilder sb = new StringBuilder();
+                    while ((temp = br.readLine()) != null) {
+                        sb.append(temp);
+                    }
+                    return sb.toString();
                 }
-                return sb.toString();
+            } else {
+                //没有就下载
+                downloadImage();
             }
-        }else {
-            //没有就下载
-            downloadImage();
+            //分析
+            String result = modelAnalysis();
+            //保存分析结果
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+                bw.write(result);
+            }
+            return result;
         }
-        //分析
-        String result = modelAnalysis();
-        //保存分析结果
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-            bw.write(result);
-        }
-        return result;
+        return null;
     }
 
     /**
