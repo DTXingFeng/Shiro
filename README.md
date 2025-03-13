@@ -16,6 +16,7 @@
 - [x] 活跃度机制发言
 - [ ] 表情包/图片分析
 - [ ] 表情包回复
+- [ ] 强相关回复
 
 ## 致谢
 [Shiro](https://github.com/MisakaTAT/Shiro):基于 OneBot 协议的 QQ机器人 快速开发框架  
