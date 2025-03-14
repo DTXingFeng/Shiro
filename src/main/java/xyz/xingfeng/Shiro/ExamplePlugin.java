@@ -367,11 +367,6 @@ public class ExamplePlugin {
         Log.info(s);
     }
 
-    @PrivateMessageHandler
-    public void example(Bot bot, PrivateMessageEvent event, Matcher matcher){
-        Log.info("收到了消息"+event.getMessage());
-        bot.sendPrivateMsg(2695570953L,"收到了来自"+event.getUserId()+" "+event.getPrivateSender().getNickname()+"的私聊消息,内容是:"+event.getMessage(),false);
-    }
 
     /**
      * 打开\关闭自动群聊
