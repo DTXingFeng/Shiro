@@ -146,7 +146,11 @@ public class ImageAnalysis {
         String string = response.body().string();
         Log.info(string);
         JSONObject jsonObject = new JSONObject(string);
-        return jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+        if (jsonObject.has("choices")) {
+            return jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+        }else {
+            throw new Exception("分析失败");
+        }
     }
 
     /**
