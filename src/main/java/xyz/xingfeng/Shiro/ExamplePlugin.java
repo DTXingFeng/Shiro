@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
+import xyz.xingfeng.Shiro.Tool.ImageAnalysis;
 import xyz.xingfeng.Shiro.Tool.Static;
 import xyz.xingfeng.Shiro.Tool.TimeTracker;
 import xyz.xingfeng.Shiro.network.NetRequest;
@@ -519,17 +520,19 @@ public class ExamplePlugin {
      */
     @Order(1)
     @GroupMessageHandler
-    public void 提示(Bot bot,GroupMessageEvent event){
-        System.out.println(event.getMessage());
+    public void 提示(Bot bot,GroupMessageEvent event) throws Exception {
+        Log.info(event.getMessage());
         String str = event.getMessage();
         String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]||^\\[CQ:mface.*\\]||^\\[CQ:xml.*\\]||^\\[CQ:share.*\\]||^\\[CQ:music.*\\]||^\\[CQ:forward.*\\]";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(str);
-        if(m.matches()){
-            //如果是图片
-            if (str.startsWith("[CQ:image")){
-
-            }
+        synchronized (this) {
+            if (m.matches()) {
+                //如果是图片
+                if (str.startsWith("[CQ:image")) {
+                    event.setMessage("图片信息:\n"+new ImageAnalysis(event.getMessage()).analysis());
+                    Gemini.addMsg(event, "user", true);
+                }
 //            pattern = "\\[CQ:image.*?url=([^,]+).*?\\]";
 //            r = Pattern.compile(pattern);
 //            m = r.matcher(str);
@@ -551,16 +554,15 @@ public class ExamplePlugin {
 //                }
 //            }
 
-        } else {
-            synchronized (this) {
+            } else {
                 new Wife().addWife(event.getUserId().toString(), event.getGroupId().toString());
-                Gemini.addMsg(event,"user",true);
-                new TimeTracker(event.getGroupId()+"").addTime();
-            }
-            if(new TimeTracker(event.getGroupId()+"").isActive()){
-                new Thread(()->{
-                    aichat(bot,event,false);
-                }).start();
+                Gemini.addMsg(event, "user", true);
+                new TimeTracker(event.getGroupId() + "").addTime();
+                if (new TimeTracker(event.getGroupId() + "").isActive()) {
+                    new Thread(() -> {
+                        aichat(bot, event, false);
+                    }).start();
+                }
             }
         }
     }

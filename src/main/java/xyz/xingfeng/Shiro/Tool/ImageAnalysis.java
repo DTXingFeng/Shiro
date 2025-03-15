@@ -2,6 +2,8 @@ package xyz.xingfeng.Shiro.Tool;
 
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import okhttp3.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,6 +19,7 @@ import java.util.regex.Pattern;
  * 图像解析，用于分析表情包以及一些图片
  */
 public class ImageAnalysis {
+    private static final Logger Log= LogManager.getLogger(ImageAnalysis.class);
 
     private static String fileName = "";
     private String subType = "";
@@ -81,7 +84,13 @@ public class ImageAnalysis {
                 }
             } else {
                 //没有就下载
-                downloadImage();
+                byte[] bytes = downloadImage();
+                File img = Paths.get("memes\\image", fileName).toFile();
+                img.createNewFile();
+                //写入文件
+                try (FileOutputStream fis = new FileOutputStream(file)) {
+                    fis.write(bytes);
+                }
             }
             //分析
             String result = modelAnalysis();
@@ -105,7 +114,7 @@ public class ImageAnalysis {
     /**
      * 下载图片
      */
-    private void downloadImage() throws Exception {
+    private byte[] downloadImage() throws Exception {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
@@ -114,15 +123,8 @@ public class ImageAnalysis {
                 .build();
         Response response = client.newCall(request).execute();
         byte[] bytes = response.body().bytes();
-        Path path = Paths.get("memes\\image", fileName);
-        File file = path.toFile();
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-        //写入文件
-        try (FileInputStream fis = new FileInputStream(file)) {
-            fis.read(bytes);
-        }
+        return bytes;
+
     }
 
     /**
@@ -142,6 +144,7 @@ public class ImageAnalysis {
                 .build();
         Response response = client.newCall(request).execute();
         String string = response.body().string();
+        Log.info(string);
         JSONObject jsonObject = new JSONObject(string);
         return jsonObject.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
     }
@@ -149,7 +152,7 @@ public class ImageAnalysis {
     /**
      * 构建请求消息
      */
-    private String buildRequestMessage(){
+    private String buildRequestMessage() throws Exception {
         //构建消息
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("model","deepseek-ai/deepseek-vl2");
@@ -184,25 +187,28 @@ public class ImageAnalysis {
     /**
      * 将文件转为base64
      */
-    public static String fileToBase64() {
+    public String fileToBase64() throws Exception {
         String base64String;
         Base64.Encoder encoder = Base64.getEncoder();
         Path path = Paths.get("memes\\image", fileName);
-
-        try (FileInputStream fis = new FileInputStream(path.toFile())) {
-            // 读取文件内容并编码为 Base64
-            byte[] fileBytes = fis.readAllBytes();
-            base64String = encoder.encodeToString(fileBytes);
-
-            // 获取文件的 MIME 类型
-            String mimeType = getMimeType();
-
-            // 添加前缀
-            base64String = "data:" + mimeType + ";base64," + base64String;
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read or encode file: " + fileName, e);
+        if (!path.toFile().exists()){
+            //文件不存在
+            byte[] bytes = downloadImage();
+            base64String = encoder.encodeToString(bytes);
+        }else {
+            try (FileInputStream fis = new FileInputStream(path.toFile())) {
+                // 读取文件内容并编码为 Base64
+                byte[] fileBytes = fis.readAllBytes();
+                base64String = encoder.encodeToString(fileBytes);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read or encode file: " + fileName, e);
+            }
         }
+        // 获取文件的 MIME 类型
+        String mimeType = getMimeType();
 
+        // 添加前缀
+        base64String = "data:" + mimeType + ";base64," + base64String;
         return base64String;
     }
 
