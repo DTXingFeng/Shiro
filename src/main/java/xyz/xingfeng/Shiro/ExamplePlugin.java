@@ -52,7 +52,7 @@ public class ExamplePlugin {
     public void ban(Bot bot, GroupBanNoticeEvent event){
         Long groupId = event.getGroupId();
         String subType = event.getSubType();
-        if (groupId == bot.getSelfId()) {
+        if (event.getUserId() == bot.getSelfId()) {
             Log.info("被群：{} {}", groupId, subType);
             if (subType.equals("ban")){
                 new TimeTracker(groupId + "").close();
