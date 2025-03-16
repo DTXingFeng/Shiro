@@ -1,9 +1,6 @@
 package xyz.xingfeng.Shiro;
 
-import com.mikuac.shiro.annotation.AnyMessageHandler;
-import com.mikuac.shiro.annotation.GroupMessageHandler;
-import com.mikuac.shiro.annotation.MessageHandlerFilter;
-import com.mikuac.shiro.annotation.PrivateMessageHandler;
+import com.mikuac.shiro.annotation.*;
 import com.mikuac.shiro.annotation.common.Order;
 import com.mikuac.shiro.annotation.common.Shiro;
 import com.mikuac.shiro.common.utils.MsgUtils;
@@ -15,6 +12,7 @@ import com.mikuac.shiro.dto.action.response.GroupMemberInfoResp;
 import com.mikuac.shiro.dto.event.message.AnyMessageEvent;
 import com.mikuac.shiro.dto.event.message.GroupMessageEvent;
 import com.mikuac.shiro.dto.event.message.PrivateMessageEvent;
+import com.mikuac.shiro.dto.event.notice.GroupBanNoticeEvent;
 import com.mikuac.shiro.enums.AtEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +41,26 @@ import java.util.regex.Pattern;
 @Component
 public class ExamplePlugin {
     private static final Logger Log= LogManager.getLogger(ExamplePlugin.class);
+
+
+    /**
+     * 群禁言事件
+     * @param bot
+     * @param event
+     */
+    @GroupBanNoticeHandler
+    public void ban(Bot bot, GroupBanNoticeEvent event){
+        Long groupId = event.getGroupId();
+        String subType = event.getSubType();
+        if (groupId == bot.getSelfId()) {
+            Log.info("被群：{} {}", groupId, subType);
+            if (subType.equals("ban")){
+                new TimeTracker(groupId + "").close();
+            }else if (subType.equals("lift_ban")){
+                new TimeTracker(groupId + "").open();
+            }
+        }
+    }
 
     @GroupMessageHandler
     @MessageHandlerFilter(cmd = "/help|/帮助|/帮助信息")
@@ -520,7 +538,7 @@ public class ExamplePlugin {
      */
     @Order(1)
     @GroupMessageHandler
-    public void 提示(Bot bot,GroupMessageEvent event) throws Exception {
+    public void 提示(Bot bot,GroupMessageEvent event) {
         Log.info(event.getMessage());
         String str = event.getMessage();
         String pattern = "^\\[CQ:image.*\\]||^\\[CQ:video.*\\]||^\\[CQ:json.*\\]||^\\[CQ:mface.*\\]||^\\[CQ:xml.*\\]||^\\[CQ:share.*\\]||^\\[CQ:music.*\\]||^\\[CQ:forward.*\\]";
@@ -530,7 +548,11 @@ public class ExamplePlugin {
             if (m.matches()) {
                 //如果是图片
                 if (str.startsWith("[CQ:image")) {
-                    event.setMessage("图片信息:\n"+new ImageAnalysis(event.getMessage()).analysis());
+                    try {
+                        event.setMessage("图片信息:\n"+new ImageAnalysis(event.getMessage()).analysis());
+                    }catch (Exception e){
+                        Log.error(e);
+                    }
                     Gemini.addMsg(event, "user", true);
                 }
 //            pattern = "\\[CQ:image.*?url=([^,]+).*?\\]";
