@@ -80,6 +80,7 @@ public class ImageAnalysis {
                     while ((temp = br.readLine()) != null) {
                         sb.append(temp);
                     }
+                    br.close();
                     return sb.toString();
                 }
             } else {
@@ -88,7 +89,7 @@ public class ImageAnalysis {
                 File img = Paths.get("memes\\image", fileName).toFile();
                 img.createNewFile();
                 //写入文件
-                try (FileOutputStream fis = new FileOutputStream(file)) {
+                try (FileOutputStream fis = new FileOutputStream(img)) {
                     fis.write(bytes);
                 }
             }

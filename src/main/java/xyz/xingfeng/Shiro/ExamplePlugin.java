@@ -548,6 +548,9 @@ public class ExamplePlugin {
             if (m.matches()) {
                 //如果是图片
                 if (str.startsWith("[CQ:image")) {
+                    if (!new TimeTracker(event.getGroupId()+"").isOpen()){
+                        return;
+                    }
                     try {
                         event.setMessage("图片信息:\n"+new ImageAnalysis(event.getMessage()).analysis());
                     }catch (Exception e){
