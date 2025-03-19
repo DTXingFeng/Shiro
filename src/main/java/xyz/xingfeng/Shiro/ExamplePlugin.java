@@ -509,7 +509,7 @@ public class ExamplePlugin {
     public synchronized void aichat(Bot bot,GroupMessageEvent event,boolean b) {
         try {
             String post = "";
-            post = new Gemini(event.getGroupId()).post();
+            post = new Gemini().group(event.getGroupId()+"").post();
             post = post.trim();
             if (post.equals("")) {
                 throw new Exception("返回为空");

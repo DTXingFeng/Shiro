@@ -25,9 +25,10 @@ public class Gemini {
     private String url;
     private String modelName;
     private String prompt;
+    private JSONObject model;
 
     public Gemini() {
-
+        initialization();
     }
 
     private JSONObject readJsonFile(File file) {
@@ -58,47 +59,8 @@ public class Gemini {
         return sb.toString();
     }
 
-    private JSONObject model = new JSONObject();
-    public Gemini(Long groupId) throws Exception {
-        initialization();
-        Path chatHistoryDir = Paths.get("ChatHistory");
-        Path filePath = chatHistoryDir.resolve(groupId + ".json");
-        File f = filePath.toFile();
-        // 确保文件存在
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to create file: " + filePath, e);
-            }
-        }
-        BufferedReader bufferedReader = new BufferedReader(new FileReader(f));
-        StringBuilder sb = new StringBuilder();
-        String temp = "";
-        while ((temp = bufferedReader.readLine())!=null){
-            sb.append(temp);
-        }
-        bufferedReader.close();
-        JSONArray groupDatas = new JSONObject(sb.toString()).getJSONArray("msg");
-        //检查历史记录中是否有关键词
-        keywordDetection(groupDatas);
-        //构建提示词
-        JSONObject system = new JSONObject();
-        system.put("role","system");
-        system.put("content",prompt);
-        //构建模型请求
-        model = new JSONObject();
-        model.put("model",modelName);
-        model.put("temperature",1.3);
-        model.put("stream",true);
-        //将历史记录导入
-        JSONArray msg = new JSONArray();
-        msg.put(system);
-        for (int i = 0; i < groupDatas.length(); i++) {
-            msg.put(groupDatas.getJSONObject(i));
-        }
-        model.put("messages",msg);
-    }
+
+    
 
     private void keywordDetection(JSONArray jsonArray){
         //从知识库中获得关键词
@@ -160,7 +122,80 @@ public class Gemini {
     }
 
 
+    /**
+     * 群聊模式
+     * @param groupId 群号
+     */
+    public Gemini group(String groupId) throws Exception{
+        Path chatHistoryDir = Paths.get("ChatHistory\\group");
+        Path filePath = chatHistoryDir.resolve(groupId + ".json");
+        try {
+            load(filePath);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return this;
+    }
 
+    /**
+     * 私聊模式
+     * @param userId 用户QQ
+     */
+    public Gemini privateChat(String userId){
+        Path chatHistoryDir = Paths.get("ChatHistory\\private");
+        Path filePath = chatHistoryDir.resolve(userId + ".json");
+        try {
+            load(filePath);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return this;
+    }
+
+    /**
+     * 加载数据
+     */
+    public void load(Path filePath) throws Exception {
+        File f = filePath.toFile();
+        // 确保文件存在
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create file: " + filePath, e);
+            }
+        }
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(f));
+        StringBuilder sb = new StringBuilder();
+        String temp = "";
+        while ((temp = bufferedReader.readLine())!=null){
+            sb.append(temp);
+        }
+        bufferedReader.close();
+        JSONArray groupDatas = new JSONObject(sb.toString()).getJSONArray("msg");
+        //检查历史记录中是否有关键词
+        keywordDetection(groupDatas);
+        //构建提示词
+        JSONObject system = new JSONObject();
+        system.put("role","system");
+        system.put("content",prompt);
+        //构建模型请求
+        model = new JSONObject();
+        model.put("model",modelName);
+        model.put("temperature",1.3);
+        model.put("stream",true);
+        //将历史记录导入
+        JSONArray msg = new JSONArray();
+        msg.put(system);
+        for (int i = 0; i < groupDatas.length(); i++) {
+            msg.put(groupDatas.getJSONObject(i));
+        }
+        model.put("messages",msg);
+    }
+
+    /**
+     * 初始化
+     */
     private void initialization(){
         Path aiConfigDir = Paths.get("aiConfig");
 
@@ -180,6 +215,11 @@ public class Gemini {
         this.prompt = readFileToString(promptFile);
     }
 
+    /**
+     * 发送请求
+     * @return
+     * @throws Exception
+     */
     public String post() throws Exception {
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .readTimeout(30, TimeUnit.SECONDS)
@@ -243,7 +283,7 @@ public class Gemini {
 
     public synchronized static void addMsg(GroupMessageEvent event,String role,boolean b){
             // 保存聊天记录
-            Path chatHistoryDir = Paths.get("ChatHistory");
+            Path chatHistoryDir = Paths.get("ChatHistory\\group");
             Path filePath = chatHistoryDir.resolve(event.getGroupId() + ".json");
 
             // 确保目录存在
