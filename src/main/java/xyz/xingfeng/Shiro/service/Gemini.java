@@ -307,7 +307,6 @@ public class Gemini {
                 // 构建准备存进去的json
                 JSONObject msg = new JSONObject();
                 msg.put("role", role);
-                msg.put("name", event.getUserId().toString());
                 if (b){
                     JSONObject content = new JSONObject();
                     content.put("qq",event.getUserId());
