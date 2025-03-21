@@ -555,6 +555,7 @@ public class ExamplePlugin {
                         event.setMessage("图片信息:\n"+new ImageAnalysis(event.getMessage()).analysis());
                     }catch (Exception e){
                         Log.error(e);
+                        return;
                     }
                     Gemini.addMsg(event, "user", true);
                 }
