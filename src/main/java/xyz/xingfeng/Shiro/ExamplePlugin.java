@@ -85,7 +85,7 @@ public class ExamplePlugin {
     @GroupMessageHandler
     @MessageHandlerFilter(cmd = "重置记忆")
     public void resetMemory(Bot bot, GroupMessageEvent event) {
-        Path chatHistoryDir = Paths.get("ChatHistory");
+        Path chatHistoryDir = Paths.get("ChatHistory\\group");
         Path filePath = chatHistoryDir.resolve(event.getGroupId() + ".json");
         File f = filePath.toFile();
         if (f.exists()) {
