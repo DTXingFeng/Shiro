@@ -7,7 +7,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import xyz.xingfeng.Shiro.network.NetRequest;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
@@ -41,52 +45,7 @@ public class ImageService {
         }
         return urls;
     }
-    public String md5(String text){
-        StringBuilder hexString = new StringBuilder();
-        try {
-            // 创建MessageDigest实例，指定使用MD5算法
-            MessageDigest md = MessageDigest.getInstance("MD5");
 
-            // 将输入字符串转换为字节数组并更新MessageDigest
-            md.update(text.getBytes());
-
-            // 执行哈希计算
-            byte[] digest = md.digest();
-
-            // 将字节数组转换为16进制字符串
-            hexString = new StringBuilder();
-            for (byte b : digest) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-
-            // 输出MD5哈希值
-            System.out.println("MD5 hash: " + hexString.toString());
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return hexString.toString();
-    }
-
-    public List<String> aliGetImageUrl() throws Exception {
-        List<String> bases = new ArrayList<>();
-        String s = md5("xingfeng" + LocalDate.now().toString());
-        Map<String,String> map = new HashMap<>();
-        map.put("tokens",s);
-        String s1 = new NetRequest().get("http://8.219.139.122:8800/pixiv",null,map);
-        JSONObject json = new JSONObject(s1);
-        if (json.getInt("code")!=200){
-            throw new Exception("请求错误");
-        }
-        JSONArray data = json.getJSONArray("data");
-        for (int i = 0; i < data.length(); i++){
-            bases.add("base64://"+data.getString(i));
-        }
-        return bases;
-    }
     /**
      * 从反向代理获得图片
      */
@@ -102,7 +61,6 @@ public class ImageService {
         for (int i =0; i < data.length(); i++){
             JSONObject jsonObject1 = data.getJSONObject(i);
             String string = jsonObject1.getJSONObject("urls").getString("original");
-            string = string.replaceAll("https://i.pixiv.re/","http://pixiv.xingfeng.xyz/");
             urls.add(string);
         }
         for (String url : urls){
@@ -123,7 +81,10 @@ public class ImageService {
 
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                byte[] imageBytes = response.body().bytes();
+                BufferedImage bufferedImage = imagePixie(response.body().byteStream());// 确保图片可以被读取
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ImageIO.write(bufferedImage, "PNG", baos);
+                byte[] imageBytes = baos.toByteArray();
                 base64Image = Base64.getEncoder().encodeToString(imageBytes);
             } else {
                 System.out.println("Request failed: " + response.code());
@@ -133,6 +94,13 @@ public class ImageService {
         }
         return base64Image;
     }
-
+    //处理图片像素点
+    private BufferedImage imagePixie(InputStream is) throws IOException {
+        BufferedImage read = ImageIO.read(is);
+        int height = read.getHeight();
+        int width = read.getWidth();
+        read.setRGB(width-1,height-1,0);
+        return read;
+    }
 
 }

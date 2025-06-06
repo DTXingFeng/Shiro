@@ -22,6 +22,8 @@ public class TimeTracker {
      */
     private static final int COUNT = 10;
 
+    private int coolDownTime = 0; // 冷却时间，单位为秒
+
 
     private String groupId = null;
     public TimeTracker(String groupId){
@@ -104,15 +106,13 @@ public class TimeTracker {
         if (s == null || s.isEmpty()) {
             return false;
         }
-        // 动态生成冷却时间
-        int coolDownTime = generateCoolDownTime();
 
         // 检查发言冷却
         long l = System.currentTimeMillis();
-        if (l - getLastTime() < coolDownTime * 1000) {
+        if (l - getLastTime() < coolDownTime * 1000L) {
             return false;
         }
-
+        generateCoolDownTime();
         //发言欲是否达标
         if (isReach()){
             //更新发言时间
@@ -131,7 +131,7 @@ public class TimeTracker {
     /**
      * 生成符合正态分布的冷却时间（20秒到180秒）
      */
-    public int generateCoolDownTime() {
+    public void generateCoolDownTime() {
         Random random = new Random();
         double mean = 100.0; // 均值，冷却时间的中间值
         double stdDev = 30.0; // 标准差，控制分布的宽度
@@ -141,9 +141,7 @@ public class TimeTracker {
 
         // 将值限制在20秒到180秒之间
         int coolDownTime = (int) Math.round(gaussianValue);
-        coolDownTime = Math.max(20, Math.min(180, coolDownTime));
-
-        return coolDownTime;
+        this.coolDownTime = Math.max(20, Math.min(180, coolDownTime));
     }
 
     /**
@@ -250,10 +248,6 @@ public class TimeTracker {
         //写入文件
         write(strings);
         double v = readSpeechDesire();
-        if (v >= 100){
-            writeSpeechDesire(100);
-            return;
-        }
         //随机增加1-4
         v += new Random().nextInt(4) + 1;
         writeSpeechDesire(v);
@@ -309,8 +303,8 @@ public class TimeTracker {
         //发言欲为1-40时为1%发言率,40之后指数上升，直到100为100%发言率
         if (v >= 1 && v <= 40){
             return new Random().nextInt(100) < 1;
-        }else if(v > 40 && v <= 100) {
-            return new Random().nextInt(100) < Math.pow(1.08, v - 40);
+        }else if(v > 40) {
+            return new Random().nextInt(100) < Math.pow(0.8, v - 40);
         }
         return false;
     }
