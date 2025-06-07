@@ -22,7 +22,7 @@ public class TimeTracker {
      */
     private static final int COUNT = 10;
 
-    private int coolDownTime = 0; // 冷却时间，单位为秒
+    private static int coolDownTime = 0; // 冷却时间，单位为秒
 
 
     private String groupId = null;
