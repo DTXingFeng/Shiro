@@ -22,11 +22,12 @@ public class PromptTool {
         this.max_tokens = max_tokens;
     }
 
-    public void addMessage(String role, String content) {
+    public PromptTool addMessage(String role, String content) {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("role", role);
         jsonObject.put("content", content);
         messages.put(jsonObject);
+        return this;
     }
 
     public JSONObject buildRequestMessage() {
