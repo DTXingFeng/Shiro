@@ -109,7 +109,7 @@ public class TimeTracker {
 
         // 检查发言冷却
         long l = System.currentTimeMillis();
-        if (l - getLastTime() < coolDownTime * 1000L) {
+        if (l - getLastTime() < TimeTracker.coolDownTime * 1000L) {
             return false;
         }
         generateCoolDownTime();
@@ -141,7 +141,7 @@ public class TimeTracker {
 
         // 将值限制在20秒到180秒之间
         int coolDownTime = (int) Math.round(gaussianValue);
-        this.coolDownTime = Math.max(20, Math.min(180, coolDownTime));
+        TimeTracker.coolDownTime = Math.max(20, Math.min(180, coolDownTime));
     }
 
     /**
