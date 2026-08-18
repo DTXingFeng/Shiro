@@ -3,10 +3,9 @@ spring:
     name: "Shiro"
 
 
-# ??????????
+
 shiro:
   ws:
-    access-token : "2tPKJHWm4UpRbXMAkAEx"
     client:
       enable: true
       url: "ws://127.0.0.1:3001"
@@ -20,8 +19,3 @@ logging:
     charset: UTF-8  # 强制日志文件使用 UTF-8 编码
 
 
-
-myapp:
-  server:
-    ip: 192.168.100.36
-    port: 20171

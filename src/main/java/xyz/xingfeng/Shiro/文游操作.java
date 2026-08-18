@@ -152,7 +152,6 @@ public class 文游操作 {
         }
         if (BotState.等待) {
             BotState.PVP = true;
-            bot.sendGroupMsg(event.getGroupId(), "状态更新为：战斗中", false);
             Log.info("状态更新为：战斗中");
             if (event.getMessage().contains("请双方出战阵容")) {
                 bot.sendGroupMsg(event.getGroupId(), "出战阵容刑风OS", false);
